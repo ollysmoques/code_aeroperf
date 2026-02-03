@@ -1,0 +1,3 @@
+# CL_alpha values computed from file: Concept_9 2only_horizontal_DegenGeom.polar
+dCL/dAoA_per_degree	 9.031251e-02
+dCL/dAoA_per_radian	 5.174526e+00
