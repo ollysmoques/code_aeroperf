@@ -1,6 +1,11 @@
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
+
+----
+Revision 1 - SEE END OF DOCUMENT FOR ADDITIONAL SPECIFICS THAT APPLIES TO THE PRIVATE SECTOR
+----
+
  Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
  Everyone is permitted to copy and distribute verbatim copies
  of this license document, but changing it is not allowed.
@@ -659,3 +664,31 @@ specific requirements.
 if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <https://www.gnu.org/licenses/>.
+
+
+----
+REV 1 
+
+
+## Legal Framework
+This project utilizes the **GNU Affero General Public License v3.0 (AGPL-3.0)**. 
+
+### Contributor License Agreement (CLA)
+To maintain the maintainer's ability to offer **Commercial Licenses**, all contributors agree to the following upon submission of a Pull Request:
+* You grant the maintainer a non-exclusive, worldwide, royalty-free, sublicensable, and perpetual license to your contribution.
+* The maintainer reserves the right to dual-license the software under proprietary terms for commercial entities.
+
+### Commercial Inquiries
+For commercial use cases requiring exemption from AGPL-3.0 network copyleft requirements (e.g., proprietary SaaS stacks):
+* **Contact**: alessandro.david@etud.polymtl.ca
+* **Terms**: Custom licensing agreements are available for production environments.
+
+## Technical Standards
+* **Commit Style**: Use conventional commits (e.g., `feat:`, `fix:`, `refactor:`).
+* **Documentation**: Inline documentation and updates to the `/docs` directory are mandatory for all logic changes.
+* **Testing**: Submissions must include unit tests and pass existing CI/CD pipelines.
+
+
+----
+
+
