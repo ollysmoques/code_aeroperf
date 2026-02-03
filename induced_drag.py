@@ -1,0 +1,325 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# ------------------------------------------------------------
+#  READ CL(0) FROM POLAR
+# ------------------------------------------------------------
+def get_cl_0(file='horizontal_only.polar'):
+    target_aoa = 0.0
+    column_index = 4   # CL is column 5 = index 4
+
+    with open(file, "r") as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+
+            try:
+                aoa = float(parts[2])
+            except ValueError:
+                continue
+
+            if abs(aoa - target_aoa) < 1e-9:
+                cl_value = float(parts[column_index])
+                # print(f"[INFO] CL(AoA=0) = {cl_value} for all planforms")
+                return cl_value
+
+    raise ValueError("AoA = 0 not found in file.")
+
+
+# ------------------------------------------------------------
+#  READ CL_alpha
+# ------------------------------------------------------------
+def get_cl_alpha(file):
+    with open(file, "r") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped:
+                cl_alpha = float(stripped)
+                # print(f"[INFO] CL_alpha = {cl_alpha} (per degree) for all planforms")
+                return cl_alpha
+    raise ValueError("Could not read CL_alpha file.")
+
+
+# ------------------------------------------------------------
+#  FETCH CMy FOR GIVEN AoA USING NEAREST MATCH
+# ------------------------------------------------------------
+def get_cm_wing(file, AoA):
+    target_aoa = float(AoA)
+
+    column_aoa = 2
+    column_cmy = 17
+
+    best_diff = 1e9
+    best_cmy = None
+    best_aoa = None
+
+    with open(file, "r") as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) < 18:
+                continue
+
+            try:
+                aoa = float(parts[column_aoa])
+            except ValueError:
+                continue
+
+            diff = abs(aoa - target_aoa)
+
+            if diff < best_diff:
+                best_diff = diff
+                best_cmy = float(parts[column_cmy])
+                best_aoa = aoa
+
+    if best_cmy is None:
+        raise ValueError("No valid AoA/CMy found in file.")
+
+    # print(f"[INFO] CMy ≈ {best_cmy:.6f} at nearest AoA = {best_aoa:.3f}°")
+    return best_cmy
+
+def get_cl_from_polar(file: str, aoa_target: float) -> float:
+    """
+    Return CL from a .polar file for the AoA closest to aoa_target.
+
+    Assumes:
+      AoA is column index 2
+      CL  is column index 4
+    """
+    col_aoa = 2
+    col_cl  = 4
+
+    best_diff = 1e9
+    best_cl   = None
+
+    with open(file, "r") as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) <= col_cl:
+                continue
+
+            try:
+                aoa = float(parts[col_aoa])
+                cl  = float(parts[col_cl])
+            except ValueError:
+                continue
+
+            diff = abs(aoa - aoa_target)
+            if diff < best_diff:
+                best_diff = diff
+                best_cl   = cl
+
+    if best_cl is None:
+        raise ValueError("No valid AoA/CL found in polar file.")
+
+    return best_cl
+
+
+# ------------------------------------------------------------
+#  COMPUTE WING + EMPENNAGE LIFT IN IMPERIAL UNITS
+# ------------------------------------------------------------
+def get_empennage_lift(Cm_emp, Cl_tot, cg_mac, cp_mac, lt, MAC, q, S):
+    """
+    All units are imperial:
+      - lt, MAC in ft
+      - q in psf (lb/ft^2)
+      - S in ft^2
+      - Outputs lift in lbf
+    """
+
+    Cl_tot_0 = get_cl_0()
+    Cl_alpha = get_cl_alpha('polar_platforms/CL_alpha_value.txt')
+
+    AoA_deg = (Cl_tot - Cl_tot_0) / Cl_alpha
+    # print(f"[INFO] Corresponding AoA for Cmy computation of wing = {AoA_deg:.3f}°")
+
+    Cm_wing = get_cm_wing('wing_only.polar', AoA_deg)
+
+    RHS = np.array([
+        Cl_tot * q * S,     # Total lift (lbf)
+        - Cm_emp - Cm_wing  # nondimensional moment coeffs
+    ])
+
+    term_1 = MAC*(cp_mac - cg_mac)
+    term_2 = lt + MAC*(cp_mac - cg_mac)
+
+    M = np.array([[1, 1], [term_1, term_2]])
+
+    wing_lift, emp_lift = np.linalg.solve(M, RHS)
+
+    # print(f"[INFO] Wing lift = {wing_lift:.2f} lbf")
+    # print(f"[INFO] Tail lift = {emp_lift:.2f} lbf (negative=downforce)")
+
+    return wing_lift, emp_lift
+
+
+# ------------------------------------------------------------
+#  INDUCED DRAG (IMPERIAL)
+# ------------------------------------------------------------
+def induced_drag(wing_lift, emp_lift, AR_wing, AR_emp, q, S,h_v_stab,b_h_stab):
+    """
+    Compute induced drag for the wing and the horizontal tail (empennage)
+    using classical lifting-line aerodynamic relationships. This version is 
+    fully adapted for **imperial units**, where all forces are in lbf, geometry 
+    in ft, areas in ft², and dynamic pressure in psf.
+
+    The method calculates the induced drag coefficient (Cdi) and induced drag 
+    force (Di) for each surface separately, based on the lift generated by each
+    surface and its aspect ratio. It also accounts for the Oswald span efficiency
+    based on aspect ratio using a commonly used empirical formula.
+
+    --------------------------------------------------------------------------
+    FORMULATION
+    --------------------------------------------------------------------------
+    Induced drag coefficient for each surface:
+    Cdi = CL² / (π * e * AR)
+
+    Induced drag force:
+    Di = Cdi * q * S
+
+    where:
+    CL = L / (q * S)
+    e  = Oswald efficiency factor (Snorri approximation)
+        e = 1.78 * (1 - 0.045 * AR^0.68) - 0.64
+
+    --------------------------------------------------------------------------
+    INPUTS  (Imperial Units)
+    --------------------------------------------------------------------------
+    wing_lift : float
+    Lift generated by the wing, in lbf. May be positive (upforce) or
+    negative depending on configuration.
+
+    emp_lift : float
+    Lift generated by the horizontal tail (empennage), in lbf.
+    For conventional aircraft, a positive tail lift indicates *downforce*.
+
+    AR_wing : float
+    Aspect ratio of the wing (b² / S). Dimensionless.
+
+    AR_emp : float
+    Aspect ratio of the horizontal tail. Dimensionless.
+
+    q : float
+    Dynamic pressure in psf (lbf/ft²).
+    Typical value near sea level at moderate speed: 20–80 psf.
+
+    S : float
+    Reference wing area in ft².
+    Used for both wing and empennage CL normalization.
+
+    --------------------------------------------------------------------------
+    RETURNS
+    --------------------------------------------------------------------------
+    Cdi_wing : float
+    Induced drag coefficient for the wing (dimensionless).
+
+    Di_wing : float
+    Induced drag force for the wing in lbf.
+
+    Cdi_emp : float
+    Induced drag coefficient for the empennage (dimensionless).
+
+    Di_emp : float
+    Induced drag force for the empennage in lbf.
+
+    --------------------------------------------------------------------------
+    NOTES
+    --------------------------------------------------------------------------
+    • This method isolates induced drag contributions by surface, which is 
+    required in stability and trim analysis when the tail generates a 
+    significant downforce.
+
+    • The Oswald factor approximation used here is appropriate for 
+    subsonic, moderate aspect-ratio lifting surfaces.
+
+    • Because the formulas are coefficient-based, the same implementation 
+    works for SI units as long as q, S, and lift are consistent.
+
+    • Induced drag typically dominates at:
+    - low speeds
+    - high lift coefficients
+    - takeoff and landing
+
+    • Tail downforce (emp_lift > 0) increases global induced drag, while
+    a lifting tail (emp_lift < 0) can reduce it.
+
+    --------------------------------------------------------------------------
+    EXAMPLE USAGE
+    --------------------------------------------------------------------------
+    Cdi_w, Di_w, Cdi_t, Di_t = induced_drag(
+        wing_lift=420.0,     # lbf
+        emp_lift=55.0,       # lbf (downforce)
+        AR_wing=8.5,
+        AR_emp=4.2,
+        q=38.0,              # psf
+        S=36.0               # ft²
+    )
+    """
+
+    # Wing
+    e_wing = 1.78*(1 - 0.045 * AR_wing**0.68) - 0.64
+    CL_wing = wing_lift / (q * S)
+    Cdi_wing = CL_wing**2 / (e_wing * np.pi * AR_wing)
+    Di_wing = Cdi_wing * q * S
+
+    # Tail
+    dAR = 1.9* AR_emp * h_v_stab/b_h_stab 
+    AR_emp += dAR
+    e_emp = 1.78*(1 - 0.045 * AR_emp**0.68) - 0.64
+    CL_emp = emp_lift / (q * S)
+    Cdi_emp = CL_emp**2 / (e_emp * np.pi * AR_emp)
+    Di_emp = Cdi_emp * q * S
+
+    # print(f"[INFO] Wing induced drag = {Di_wing:.5f} lbf")
+    # print(f"[INFO] Tail induced drag = {Di_emp:.5f} lbf")
+
+    return Cdi_wing, Di_wing, Cdi_emp, Di_emp
+
+wing_lift, emp_lift = get_empennage_lift(-0.05,0.3,0.2,0.25,6.355,2.3,39,36)
+Cdi_wing, Di_wing, Cdi_emp, Di_emp = induced_drag(wing_lift, emp_lift, 7.18,6,39,36,1.5,6)
+
+
+
+# induced_drag_module.py
+
+from Aircraft_data import get_default_inputs
+from induced_drag import get_empennage_lift, induced_drag  # your code above
+
+def compute_induced_drag(
+    Cl_tot: float,
+    Cm_emp: float,
+    cg_mac: float,
+    cp_mac: float,
+    lt: float,
+    MAC: float,
+    AR_wing: float,
+    AR_emp: float,
+    h_v_stab: float,
+    b_h_stab: float,
+    fc=None,
+    geom=None,
+    aero=None,
+):
+    """
+    Packs the whole sequence:
+      -> wing/tail lift
+      -> induced drag of wing and tail
+    Returns (Cdi_wing, Di_wing, Cdi_emp, Di_emp)
+    """
+    if fc is None or geom is None or aero is None:
+        fc, geom, aero = get_default_inputs()
+
+    q = fc.q
+    S = geom.S_ref
+
+    wing_lift, emp_lift = get_empennage_lift(
+        Cm_emp, Cl_tot, cg_mac, cp_mac, lt, MAC, q, S
+    )
+
+    Cdi_wing, Di_wing, Cdi_emp, Di_emp = induced_drag(
+        wing_lift, emp_lift, AR_wing, AR_emp, q, S, h_v_stab, b_h_stab
+    )
+
+    return Cdi_wing, Di_wing, Cdi_emp, Di_emp
+

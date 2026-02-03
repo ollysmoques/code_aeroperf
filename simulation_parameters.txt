@@ -1,0 +1,75 @@
+========================================================
+       SIMULATION PARAMETERS & INPUT VARIABLES
+========================================================
+
+--- 1. MISSION INPUTS ---
+h_cruise_ft                   : 10000
+h_airport_ft                  : 0
+dT_isa_C                      : 0
+VY_kts                        : 75
+V_cruise_CAS_kts              : 108
+TO_weight_lb                  : 378.0
+Weight_Reserve_lb             : 303.0
+Calculated_Range_NM           : 47.036168032393356
+
+--- 2. AIRCRAFT DEFINITION (aero) ---
+{   'AR_emp': 6.0,
+    'AR_wing': 7.18,
+    'CL_max_TO': 1.4,
+    'CL_max_clean': 1.2,
+    'Cm_emp': -0.05,
+    'FUEL_LOAD': 75.0,
+    'IF_fuselage': 1.0,
+    'IF_moteur_key': 'nacelle_under_fuselage_more_1D',
+    'IF_tail_key': 'h_tail_lockheed_electra',
+    'IF_wing_key': 'low_wing_unfilleted',
+    'MAC': 2.3,
+    'MAX_TO': 378.0,
+    'OEW': 126.0,
+    'PAYLOAD': 170,
+    'RESERVE': 7.0,
+    'alpha_ini_deg': 6.0,
+    'alpha_rot_deg': 6.0,
+    'alpha_trans_deg': 3.0,
+    'b_h_stab': 6.0,
+    'cg_mac': 0.2,
+    'cp_mac': 0.25,
+    'dT_isa_TO': 0.0,
+    'h_TO_ft': 0.0,
+    'h_v_stab': 1.5,
+    'lt': 6.355,
+    'mu_TO': 0.04,
+    'sweep_c2_tail_deg': 0.0,
+    'sweep_c2_wing_deg': 0.0,
+    't_over_c_tail': 0.12,
+    't_over_c_wing': 0.15,
+    'thrust_TO_lbf': 89.0,
+    'v_trans_kts': 20.0}
+
+
+--- 3. GEOMETRY DEFINITION (geom) ---
+{   'Motor': {'Fuelflow_power_setting': 2.3, 'Max_thrust_sl': 89.0},
+    'S_ref': 36.8,
+    'flaps': {   'S_flap': 2.25,
+                 'c_flap': 0.5,
+                 'delta_f_deg': 0.0,
+                 't_over_c': 0.12},
+    'fus': {'S_wet': 71.59, 'd_max': 2.2, 'length': 12.1},
+    'gear': {'strut_lenght': 0.15, 'tire_diameter': 0.7, 'tire_width': 0.23},
+    'ht': {'S_wet': 10.7, 'c_root': 1.1, 'c_tip': 1.1},
+    'nacelle': {'S_wet': 3.04, 'd_max': 1.05, 'length': 1.1},
+    'pylon': {'S_wet': 1.125, 'c_root': 0.75, 'c_tip': 0.75},
+    'tailgear': {'e': 0.974, 'tire_diameter': 0.61, 'tire_width': 0.25},
+    'vt': {   'S_wet_lower': 2.754,
+              'S_wet_upper': 4.5856,
+              'c_root': 1.3075,
+              'c_tip': 0.98},
+    'wing': {'S_ref': 36.8, 'S_wet': 69.41, 'c_root': 2.3, 'c_tip': 2.22}}
+
+
+--- 4. FLIGHT CONDITIONS (default) ---
+{'M_inf': 0.2, 'T_R': 518.67, 'V': 182.304, 'rho': 0.002378}
+
+
+========================================================
+END OF REPORT
