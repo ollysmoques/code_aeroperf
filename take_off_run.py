@@ -256,7 +256,7 @@ def generate_3d_takeoff_plot():
     )
     
     # Mise en forme des axes
-    ax.set_title(f"Takeoff Ground Run vs Altitude & $\Delta$ISA\n(Weight={weight:.0f} lb)", fontsize=14)
+    ax.set_title(f"Takeoff Ground Run vs Altitude & $\\Delta$ISA\n(Weight={weight:.0f} lb)", fontsize=14)
     ax.set_xlabel('Airport Altitude [ft]', fontsize=11, labelpad=10)
     ax.set_ylabel('Delta ISA [°C]', fontsize=11, labelpad=10)
     ax.set_zlabel('Ground Run Distance [ft]', fontsize=11, labelpad=10)

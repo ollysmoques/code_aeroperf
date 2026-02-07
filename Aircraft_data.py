@@ -292,6 +292,8 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
         alpha_ini_deg   = 6.0,
         alpha_trans_deg = 3.0,
         alpha_rot_deg   = 6.0,
+        thrust_TO_lbf = 89.0,
+        h_TO_ft = 0.0,
         dT_isa_TO       = 0.0,
         mu_TO           = 0.04,
         CL_max_TO       = 1.4,
