@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from skin_friction import (
     WingFrictionResult,
     FuselageFrictionResult,
-    compute_wing_skin_friction,
     compute_horizontal_tail_skin_friction,
     compute_vertical_tail_skin_friction,
     compute_fuselage_skin_friction,
@@ -28,7 +27,6 @@ from Aircraft_data import (
 from Drag_Increment import (
     compute_main_gear_drag_increment,
     compute_tail_gear_drag_increment,
-    compute_flap_drag_increment,
 )
 
 
@@ -281,13 +279,7 @@ def compute_all_components(
             sweep_c2_deg=0.0,
         )
     )
-    
-    flap_res = compute_flap_drag_increment(
-    fc=fc,
-    geom=geom,
-    aero=aero,
-  
-)
+
 
     # ==============================
     # Assemblage Cf–FF–IF par composante
@@ -337,19 +329,8 @@ def compute_all_components(
         FF=FF_pylon,
         IF_=IF_pylon,
     )
-    
-    flap_drag = ComponentDrag(
-    name="Flaps",
-    Cf_eq=0.0,
-    FF=1.0,
-    IF_=1.0,
-    Cdf_base=flap_res.delta_CD,
-    Cdf_total=flap_res.delta_CD,
-    D_base=flap_res.D,
-    D_total=flap_res.D,
-)
 
-    return [ ht_drag, vt_drag, fus_drag, moteur_drag, pylon_drag, flap_drag]
+    return [ ht_drag, vt_drag, fus_drag, moteur_drag, pylon_drag]
 
 # ==============================
 # 4) Résumé imprimable

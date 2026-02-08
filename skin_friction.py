@@ -277,9 +277,6 @@ def compute_lifting_surface_skin_friction(
 
 # --- Wrappers spécifiques : pour compatibilité avec ton code actuel ---
 
-def compute_wing_skin_friction(**kwargs) -> WingFrictionResult:
-    return compute_lifting_surface_skin_friction(**kwargs)
-
 
 def compute_horizontal_tail_skin_friction(**kwargs) -> WingFrictionResult:
     return compute_lifting_surface_skin_friction(**kwargs)

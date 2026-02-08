@@ -151,78 +151,78 @@ def compute_tail_gear_drag_increment(
 
 
 
-# ============================================================
-# 4) Incrément de traînée des volets (Plain flaps, t/c = 0.12)
-#    ΔCD_flap = Δ1 · Δ2 · (S_flap / S_ref)
-#    R_f = c_f / c   (rapport corde volet / corde locale)
-#    δ_f en degrés
-#    Formules tirées des Tables 16-16 et 16-17 de Gudmundsson
-# ============================================================
+# # ============================================================
+# # 4) Incrément de traînée des volets (Plain flaps, t/c = 0.12)
+# #    ΔCD_flap = Δ1 · Δ2 · (S_flap / S_ref)
+# #    R_f = c_f / c   (rapport corde volet / corde locale)
+# #    δ_f en degrés
+# #    Formules tirées des Tables 16-16 et 16-17 de Gudmundsson
+# # ============================================================
 
-@dataclass
-class FlapDragResult:
-    delta1: float       # fonction Δ1 (géométrie du volet)
-    delta2: float       # fonction Δ2 (déflexion du volet)
-    delta_CD: float     # incrément de traînée global ΔCD_flap
-    D: float            # traînée correspondante [lbf]
-
-
-def delta1_plain_tc012(R_f: float) -> float:
-    # Table 16-16, plain flap t/c = 0.12
-    return (
-        -21.090 * R_f**3
-        + 14.091 * R_f**2
-        + 3.165  * R_f
-        - 0.00103
-    )
-
-def delta2_plain_tc012(delta_f_deg: float) -> float:
-    # Table 16-17, plain flap t/c = 0.12
-    d = delta_f_deg
-    return (
-        -3.795e-7 * d**3
-        + 5.387e-5 * d**2
-        + 6.843e-4 * d
-        - 1.4729e-3
-    )
-
-@dataclass
-class FlapDragResult:
-    delta_CD: float
-    D: float
+# @dataclass
+# class FlapDragResult:
+#     delta1: float       # fonction Δ1 (géométrie du volet)
+#     delta2: float       # fonction Δ2 (déflexion du volet)
+#     delta_CD: float     # incrément de traînée global ΔCD_flap
+#     D: float            # traînée correspondante [lbf]
 
 
-def compute_flap_drag_increment(
-    fc: FlightConditions | None = None,
-    geom: AircraftGeometry | None = None,
-    aero: AeroParams | None = None,
-) -> FlapDragResult:
-    # Inputs par défaut si pas fournis
-    if fc is None or geom is None or aero is None:
-        fc, geom, aero = get_default_inputs()
+# def delta1_plain_tc012(R_f: float) -> float:
+#     # Table 16-16, plain flap t/c = 0.12
+#     return (
+#         -21.090 * R_f**3
+#         + 14.091 * R_f**2
+#         + 3.165  * R_f
+#         - 0.00103
+#     )
 
-    flap = geom.flaps
+# def delta2_plain_tc012(delta_f_deg: float) -> float:
+#     # Table 16-17, plain flap t/c = 0.12
+#     d = delta_f_deg
+#     return (
+#         -3.795e-7 * d**3
+#         + 5.387e-5 * d**2
+#         + 6.843e-4 * d
+#         - 1.4729e-3
+#     )
 
-    # Sécurité : si pas de flaps ou déflexion nulle → pas d’incrément
-    if flap is None or flap.S_flap <= 0.0 or abs(flap.delta_f_deg) < 1e-6:
-        return FlapDragResult(delta_CD=0.0, D=0.0)
+# @dataclass
+# class FlapDragResult:
+#     delta_CD: float
+#     D: float
 
-    # ---- 1) Calcul de R_f = c_flap / c ----
-    # ici j’utilise la corde racine comme référence (comme Gudmundsson)
-    R_f = flap.c_flap / geom.wing.c_root
 
-    # ---- 2) Δ1(R_f) et Δ2(δ_f) ----
-    d1 = delta1_plain_tc012(R_f)
-    d2 = delta2_plain_tc012(flap.delta_f_deg)
+# def compute_flap_drag_increment(
+#     fc: FlightConditions | None = None,
+#     geom: AircraftGeometry | None = None,
+#     aero: AeroParams | None = None,
+# ) -> FlapDragResult:
+#     # Inputs par défaut si pas fournis
+#     if fc is None or geom is None or aero is None:
+#         fc, geom, aero = get_default_inputs()
 
-    # ---- 3) Formule Gudmundsson : ΔCD_flap = Δ1·Δ2·(S_flap / S_ref) ----
-    S_ratio      = flap.S_flap / geom.S_ref
-    delta_CD_flap = d1 * d2 * S_ratio
+#     flap = geom.flaps
 
-    # Force de traînée correspondante
-    D_flap = fc.q * geom.S_ref * delta_CD_flap
+#     # Sécurité : si pas de flaps ou déflexion nulle → pas d’incrément
+#     if flap is None or flap.S_flap <= 0.0 or abs(flap.delta_f_deg) < 1e-6:
+#         return FlapDragResult(delta_CD=0.0, D=0.0)
 
-    return FlapDragResult(
-        delta_CD=delta_CD_flap,
-        D=D_flap,
-    )
+#     # ---- 1) Calcul de R_f = c_flap / c ----
+#     # ici j’utilise la corde racine comme référence (comme Gudmundsson)
+#     R_f = flap.c_flap / geom.wing.c_root
+
+#     # ---- 2) Δ1(R_f) et Δ2(δ_f) ----
+#     d1 = delta1_plain_tc012(R_f)
+#     d2 = delta2_plain_tc012(flap.delta_f_deg)
+
+#     # ---- 3) Formule Gudmundsson : ΔCD_flap = Δ1·Δ2·(S_flap / S_ref) ----
+#     S_ratio      = flap.S_flap / geom.S_ref
+#     delta_CD_flap = d1 * d2 * S_ratio
+
+#     # Force de traînée correspondante
+#     D_flap = fc.q * geom.S_ref * delta_CD_flap
+
+#     return FlapDragResult(
+#         delta_CD=delta_CD_flap,
+#         D=D_flap,
+#     )
