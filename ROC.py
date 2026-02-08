@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from atmosphere import *
-from DRAG_TOTAL import * 
+from total_drag import * 
 from Aircraft_data import get_default_inputs
 from Thrust_data import thrust_sw400pro_ft_lbf
 from cg_shift import *

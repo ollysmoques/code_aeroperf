@@ -119,37 +119,6 @@ def compute_all_components(
 
     S_ref = geom.S_ref
 
-    # --- AILE ---
-    res_wing: WingFrictionResult = compute_wing_skin_friction(
-        rho=fc.rho,
-        V=fc.V,
-        T=fc.T_R,
-        M_inf=fc.M_inf,
-        c_root=geom.wing.c_root,
-        c_tip=geom.wing.c_tip,
-        S_wet=geom.wing.S_wet,
-        S_ref=S_ref,
-        surface_type="smooth_paint",
-        regime="subsonic",
-        units="imperial",
-        model="mixed",
-        xtr_root_upper=0.45,
-        xtr_root_lower=0.45,
-        xtr_tip_upper=0.60,
-        xtr_tip_lower=0.50,
-    )
-
-    Cf_wing_eq    = res_wing.Cf_wing_avg
-    Cdf_wing_base = res_wing.Cdf_wing
-    D_wing_base   = res_wing.Df_wing
-
-    FF_wing = compute_form_factor(
-        FormFactorInputs(
-            method="jenkinson_wing",
-            t_over_c=aero.t_over_c_wing,
-            sweep_c2_deg=aero.sweep_c2_wing_deg,
-        )
-    )
 
     # --- EMPENNAGE HORIZONTAL ---
     res_ht: WingFrictionResult = compute_horizontal_tail_skin_friction(
@@ -324,15 +293,6 @@ def compute_all_components(
     # Assemblage Cf–FF–IF par composante
     # ==============================
 
-    wing_drag = build_component_drag(
-        name="Wing",
-        Cf_eq=Cf_wing_eq,
-        Cdf_base=Cdf_wing_base,
-        D_base=D_wing_base,
-        FF=FF_wing,
-        IF_=IF_wing,
-    )
-
     ht_drag = build_component_drag(
         name="Horizontal Tail",
         Cf_eq=Cf_ht_eq,
@@ -389,7 +349,7 @@ def compute_all_components(
     D_total=flap_res.D,
 )
 
-    return [wing_drag, ht_drag, vt_drag, fus_drag, moteur_drag, pylon_drag, flap_drag]
+    return [ ht_drag, vt_drag, fus_drag, moteur_drag, pylon_drag, flap_drag]
 
 # ==============================
 # 4) Résumé imprimable

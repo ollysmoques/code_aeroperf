@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Nov 26 23:06:47 2025
-
-@author: edoua
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from atmosphere import *
+from Aircraft_data import get_default_inputs
 
 
 fc_default, geom, aero = get_default_inputs()

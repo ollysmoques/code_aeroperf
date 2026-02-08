@@ -9,7 +9,7 @@ Created on Thu Dec 4 2025
 import numpy as np
 import matplotlib.pyplot as plt
 from atmosphere import atmosphere, vitesses # Importe les fonctions atmosphère et vitesses
-from DRAG_TOTAL import drag_total           # Importe la fonction de traînée totale
+from total_drag import drag_total           # Importe la fonction de traînée totale
 from Thrust_data import thrust_sw400pro_ft_lbf # Importe la fonction de poussée
 from Aircraft_data import get_default_inputs, AeroParams # Importe les données avion
 from cg_shift import compute_cg_mac         # CG dynamique

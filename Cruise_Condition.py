@@ -7,7 +7,7 @@ Created on Thu Nov 27 01:18:21 2025
 
 import numpy as np
 from atmosphere import atmosphere, vitesses
-from DRAG_TOTAL import drag_total
+from total_drag import drag_total
 from Thrust_data import thrust_sw400pro_ft_lbf
 from Aircraft_data import get_default_inputs
 from cg_shift import *

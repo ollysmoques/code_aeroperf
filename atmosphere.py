@@ -1,5 +1,5 @@
 import numpy as np 
-from induced_drag import *
+from induced_equilibrium import *
 
 
 def atmosphere(h, variable, mode):

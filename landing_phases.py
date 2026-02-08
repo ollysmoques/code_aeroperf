@@ -8,7 +8,7 @@ Created on Thu Dec 4 2025
 import numpy as np
 import math
 from atmosphere import atmosphere, vitesses
-from DRAG_TOTAL import drag_total
+from total_drag import drag_total
 from Thrust_data import thrust_sw400pro_ft_lbf
 from cg_shift import compute_cg_mac
 from landing_run import v_touchdown, CL_MAX_LANDING # Nécessite l'import de CL_MAX_LANDING

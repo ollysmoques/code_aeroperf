@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from atmosphere import atmosphere, vitesses
-from DRAG_TOTAL import drag_total
+from total_drag import drag_total
 from Thrust_data import thrust_sw400pro_ft_lbf
 from Aircraft_data import get_default_inputs
 from Cruise_Condition import compute_cruise_range_time, compute_fuel_burned_for_time, compute_cruise_condition

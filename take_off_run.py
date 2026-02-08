@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from atmosphere import *
-from DRAG_TOTAL import * 
+from total_drag import * 
 from Aircraft_data import get_default_inputs
 from Thrust_data import *
 from cg_shift import *
@@ -18,7 +18,7 @@ h_ft        = aero.h_TO_ft
 dT_isa      = aero.dT_isa_TO
 mu          = aero.mu_TO
 sref        = geom.S_ref                
-CL_max      = aero.CL_max_TO
+CL_max      = aero.cl_max_15
 
 def v_lof_v_r(h_ft,dT_isa,weight,CL_max,sref):
     
@@ -43,7 +43,7 @@ def sumforce(mu, h_ft, dT_isa, V, weight, alpha, thrust_lbf, cg_mac_current):
     poussee = thrust_lbf
 
     # On récupère cltot ici
-    cltot, drag, qpsf = drag_total(h_ft, dT_isa, V/1.6878, weight,cg_mac_current, 'alpha','TO', alpha)
+    cltot, drag, qpsf = drag_total(h_ft, dT_isa,V/1.6878,weight,cg_mac_current,thrust_lbf,'take_off',alpha)
     
     lift = cltot * qpsf * sref
     norme = weight - lift - np.sin(alpha_rad) * poussee

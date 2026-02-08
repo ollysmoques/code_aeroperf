@@ -19,16 +19,15 @@ class FlightConditions:
         return 0.5 * self.rho * self.V**2
 
 
-# ==============================
-# 2) Géométrie
-# ==============================
-
+#
 @dataclass
 class WingGeometry:
     c_root: float
     c_tip: float
     S_ref: float
     S_wet: float
+    z_eng: float
+    z_cg: float
 
 
 @dataclass
@@ -151,8 +150,9 @@ class AeroParams:
     h_TO_ft: float         # altitude pour ce cas de TO [ft]
     dT_isa_TO: float       # delta ISA pour ce cas [°C]
     mu_TO: float           # coefficient de friction au sol
-    CL_max_TO: float       # CL_max utilisé pour le TO
-    CL_max_clean: float    # CL_max propre (clean)
+    cl_max_clean: float    # CL_max utilisé pour flaps 0
+    cl_max_15: float       # CL_max utilisé pour flaps 15
+    cl_max_30: float       # CL_max utilisé pour flaps 30
 
     # --- masses ---
     OEW: float             # Operating Empty Weight [lb]
@@ -167,10 +167,6 @@ class AeroParams:
             # Si tu veux exclure la payload, enlève self.payload ici
             self.MAX_TO = self.OEW + self.FUEL_LOAD + self.RESERVE + self.PAYLOAD
 
-
-# ==============================
-# 4) Inputs par défaut
-# ==============================
 
 def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams]:
     """
@@ -195,6 +191,8 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
         c_tip=2.22,
         S_ref=S_ref,
         S_wet=69.41,
+        z_eng = 2.55,
+        z_cg = 0.56,
     )
 
     ht = TailGeometry(
@@ -296,8 +294,9 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
         h_TO_ft = 0.0,
         dT_isa_TO       = 0.0,
         mu_TO           = 0.04,
-        CL_max_TO       = 1.4,
-        CL_max_clean    = 1.2,
+        cl_max_clean = 1.5,
+        cl_max_15 = 1.6,
+        cl_max_30 = 1.75,
 
         # ---- masses ----
         OEW       = 126.0,
