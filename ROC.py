@@ -28,12 +28,12 @@ h_ft        = aero.h_TO_ft
 dT_isa      = aero.dT_isa_TO
 mu          = aero.mu_TO
 sref        = geom.S_ref                
-CL_max      = aero.CL_max_TO
+CL_max      = aero.cl_max_15
 cg_mac_initial = compute_cg_mac(weight)
 
 
 
-def ROC(CAS_kts,h_ft,dT_isa,weight,sref,power_setting, cg_mac_current):
+def ROC(CAS_kts,h_ft,dT_isa,weight,sref,power_setting, cg_mac_current, weight_lbf):
     
     
     atm = atmosphere(h_ft,dT_isa,mode='delta_isa')
@@ -57,7 +57,7 @@ def ROC(CAS_kts,h_ft,dT_isa,weight,sref,power_setting, cg_mac_current):
         AF = 0.7*Mach**2 * (phi - 0.190263*(Tstd/T))
         
     TAS_fps = TAS_kts*1.6878
-    cltot, drag, qpsf = drag_total(h_ft, dT_isa, TAS_kts, weight,cg_mac_current, 'weight','clean')
+    cltot, drag, qpsf = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current, weight_lbf,'cruise')
     
     Thrust,Fuel_consumption = thrust_sw400pro_ft_lbf(h_ft,dT_isa,power_setting)
     
@@ -73,7 +73,7 @@ def ROC(CAS_kts,h_ft,dT_isa,weight,sref,power_setting, cg_mac_current):
     return ROC_fpm_p
 
 
-ROC_fpm_p = ROC(90,0,0,weight,sref,0.7, cg_mac_initial)
+ROC_fpm_p = ROC(90,0,0,weight,sref,0.7, cg_mac_initial, weight)
 print(ROC_fpm_p)
 
 
@@ -104,7 +104,7 @@ for i in range(n_h):
     for j in range(n_CAS):
         CAS_ij = CAS_grid[i, j]
         h_ij   = h_grid[i, j]
-        ROC_grid[i, j] = ROC(CAS_ij, h_ij, dT_isa, weight, sref,0.75, cg_mac_initial)
+        ROC_grid[i, j] = ROC(CAS_ij, h_ij, dT_isa, weight, sref,0.75, cg_mac_initial, weight)
 
 # --- Figure 3D ---
 fig = plt.figure(figsize=(8, 6))
@@ -138,8 +138,8 @@ ROC_0ft     = []
 ROC_10000ft = []
 
 for CAS in CAS_list:
-    ROC_0ft.append(ROC(CAS, 0, dT_isa, weight, sref, 0.75, cg_mac_initial))
-    ROC_10000ft.append(ROC(CAS, MISSION_HEIGHT_FT, dT_isa, weight, sref, 0.75, cg_mac_initial))
+    ROC_0ft.append(ROC(CAS, 0, dT_isa, weight, sref, 0.75, cg_mac_initial, weight))
+    ROC_10000ft.append(ROC(CAS, MISSION_HEIGHT_FT, dT_isa, weight, sref, 0.75, cg_mac_initial, weight))
 
 ROC_0ft     = np.array(ROC_0ft)
 ROC_10000ft = np.array(ROC_10000ft)
@@ -212,7 +212,7 @@ def montee(hpi,hpf,dT_isa,CAS_kts,weight_initial,sref,power_setting):
         dhp = 5
         dh_geo = dhp*T/Tstd
         
-        ROC_geo_fpm = ROC(CAS_kts,hp_moy,dT_isa,weight,sref,power_setting, cg_mac_current)
+        ROC_geo_fpm = ROC(CAS_kts,hp_moy,dT_isa,weight,sref,power_setting, cg_mac_current, weight)
         
         if ROC_geo_fpm < 300:
             print(f" ROC trop faible ({ROC_geo_fpm:.0f} ft/min) à {hp_moy:.0f} ft — montée impossible.")
@@ -281,7 +281,7 @@ def descente(hpi, hpf, dT_isa, CAS_kts, weight_initial, sref, power_setting):
         cg_mac_current = compute_cg_mac(weight)
         
         # Rate of climb "géométrique" (sera négatif si Thrust < Drag)
-        ROC_geo_fpm = ROC(CAS_kts, hp_moy, dT_isa_loc, weight, sref, power_setting, cg_mac_current)
+        ROC_geo_fpm = ROC(CAS_kts, hp_moy, dT_isa_loc, weight, sref, power_setting, cg_mac_current, weight)
 
         # Sécurité : éviter division par ~0 ou ROC dans le mauvais sens
         if ROC_geo_fpm >= -1e-3:
@@ -421,7 +421,7 @@ def acceleration(CAS_kts_initial, CAS_kts_final,
     delta_ISA = atm['delta_ISA']
 
     # Traînée et poussée (Thrust, drag en lbf, Fuel_consumption en fuel/h)
-    cltot, drag_lbf, qpsf = drag_total(h_ft, delta_ISA, TAS_kts_avg, weight_lbf,cg_mac_current, 'weight','TO')
+    cltot, drag_lbf, qpsf = drag_total(h_ft, delta_ISA, TAS_kts_avg, weight_lbf, cg_mac_current, weight_lbf, 'cruise')
     thrust_lbf, fuel_flow_per_min = thrust_sw400pro_ft_lbf(h_ft, delta_ISA, power_setting)
 
     # Accélération en ft/s^2

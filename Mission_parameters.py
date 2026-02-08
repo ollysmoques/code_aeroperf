@@ -4,4 +4,4 @@ Centralized Mission Parameters
 """
 
 # Mission Height in feet
-MISSION_HEIGHT_FT = 10000
+MISSION_HEIGHT_FT = 3000

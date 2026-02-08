@@ -179,8 +179,8 @@ def get_empennage_lift(flaps, thrust, z_eng, z_cg, weight, x_cg, mac, l_t, q, sr
 
     x_cp = 0.25
     B = np.array([thrust*(z_eng - z_cg), weight])
-    A = np.array([-(x_cp - x_cg)*mac, -l_t],
-                 [1, 1])
+    A = np.array([[-(x_cp - x_cg)*mac, -l_t],
+                  [1, 1]])
     
     C = np.linalg.solve(A,B)
 

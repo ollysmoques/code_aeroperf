@@ -38,7 +38,7 @@ def compute_cruise_condition(CAS_kts, h_ft, dT_isa, weight_lbf, cg_mac_current):
     Mach    = speed["mach"]
 
     # --- Calcul du drag total ---
-    CL, Drag_lbf, _ = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current,'weight','clean')
+    CL, Drag_lbf, _ = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current, weight_lbf, 'cruise')
 
     # ============================
     # Trouver Power Setting tel que Thrust = Drag
@@ -155,8 +155,9 @@ if __name__ == "__main__":
     h   = MISSION_HEIGHT_FT    # [ft]
     dT  = 0         # ISA
     W   = 378       # [lbf]
+    cg_mac = compute_cg_mac(W)
 
-    out = compute_cruise_condition(CAS, h, dT, W)
+    out = compute_cruise_condition(CAS, h, dT, W, cg_mac)
 
     print("\n====== CRUISE CONDITION ======")
     print(f"CAS:               {out['CAS_kts']:.1f} kt")
@@ -172,12 +173,8 @@ if __name__ == "__main__":
     print(f"Fuel flow:         {out['Fuel_flow_lb_per_min']:.4f} lb/min")
     print("==================================\n")
     
-    
-    
-    
-Range, delta_t = compute_cruise_range_time(370, 350, 108, MISSION_HEIGHT_FT, 0)
+    Range, delta_t = compute_cruise_range_time(370, 350, 108, MISSION_HEIGHT_FT, 0)
 
-
-print('Distance NM:',Range)
-print('Temps de vol en croisière min:',delta_t)    
+    print('Distance NM:',Range)
+    print('Temps de vol en croisière min:',delta_t)    
     

@@ -29,9 +29,11 @@ def drag_total(h_ft, dT_isa, V_kts, weight_lbf, cg_mac_current, thrust, config, 
         on_ground = True
         flap_defl_deg = 15
     elif config == 'landing':
+        on_ground = True
         flap_defl_deg = 30
     else:
-        assert config == 'cruise', "ERROR: config must be 'take_off', 'landing' or 'cruise'" 
+        assert config == 'cruise', "ERROR: config must be 'take_off', 'landing' or 'cruise'"
+        on_ground = False
         flap_defl_deg = 0  
 
     if hasattr(geom, "flaps") and geom.flaps is not None:
@@ -85,11 +87,12 @@ def drag_total(h_ft, dT_isa, V_kts, weight_lbf, cg_mac_current, thrust, config, 
         cdi_wing, di_wing, cdi_emp, di_emp, wing_aoa = induced_drag(
             flaps= flap_defl_deg,
             thrust = thrust,
-            z_eng = geom.z_eng,
-            z_cg = geom.z_cg,
+            z_eng = geom.wing.z_eng,
+            z_cg = geom.wing.z_cg,
             weight = weight_lbf,
             x_cg= cg_mac_current,
             mac= aero.MAC,
+            l_t= aero.lt,
             q= q_psf,
             sref = geom.S_ref,
             ar_emp = aero.AR_emp,

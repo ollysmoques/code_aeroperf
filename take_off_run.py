@@ -27,8 +27,8 @@ def v_lof_v_r(h_ft,dT_isa,weight,CL_max,sref):
     
     Vs_ft_s = np.sqrt(2*weight/(rho*sref*CL_max))
     
-    v_r = 1.25*Vs_ft_s
-    v_lof = 1.35*Vs_ft_s
+    v_r = 1.35*Vs_ft_s
+    v_lof = 1.45*Vs_ft_s
     
     return v_r, v_lof
     
@@ -201,6 +201,9 @@ plt.show()
 # ZONE DE PLOTTING 3D : ALTITUDE vs ISA vs DISTANCE
 # =============================================================================
 
+
+"""
+
 def generate_3d_takeoff_plot():
     # --- IMPORTS ---
     from mpl_toolkits.mplot3d import Axes3D
@@ -275,3 +278,5 @@ def generate_3d_takeoff_plot():
 
 if __name__ == "__main__":
     generate_3d_takeoff_plot()
+
+    """

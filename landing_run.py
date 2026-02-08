@@ -24,7 +24,7 @@ g0 = 32.174  # Gravité [ft/s²]
 
 # Paramètres spécifiques à l'atterrissage (à valider dans Aircraft_data)
 MU_BRAKE = 0.40      # Coefficient de friction au freinage (0.3 à 0.5 typique)
-CL_MAX_LANDING = aero.CL_max_TO # CL_max pour la configuration atterrissage (volets max)
+CL_MAX_LANDING = aero.cl_max_30 # CL_max pour la configuration atterrissage (volets max)
 IDLE_POWER_SETTING = 0.05 # Réglage de puissance au ralenti (idle)
 
 # Angles de toucher (assumés ici)
@@ -69,9 +69,8 @@ def sumforce_landing(
     # Vitesse en kts pour la fonction drag_total
     V_kts = V_ft_s / 1.6878
 
-    # 1. Calcul de la traînée (configuration 'TO' est utilisé ici pour config flaps, à changer si vous ajoutez 'Landing')
-    # NOTE: Dans un vrai modèle, vous définiriez une config 'LANDING' dans DRAG_TOTAL.py
-    cltot, drag, qpsf = drag_total(h_ft, dT_isa, V_kts, weight, cg_mac_current, 'alpha', 'TO', alpha_deg) 
+    # 1. Calcul de la traînée (configuration 'landing' pour flaps à 30°)
+    cltot, drag, qpsf = drag_total(h_ft, dT_isa, V_kts, weight, cg_mac_current, weight, 'landing', alpha_deg) 
     
     # 2. Portance
     lift = cltot * qpsf * sref

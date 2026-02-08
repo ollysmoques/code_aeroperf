@@ -66,7 +66,7 @@ alpha_trans = aero.alpha_trans_deg
 alpha_rot   = aero.alpha_rot_deg
 mu          = aero.mu_TO
 sref        = geom.S_ref                
-CL_max      = aero.CL_max_TO
+CL_TO      = aero.cl_max_15
 
 VY = 75
 h_cruise = MISSION_HEIGHT_FT
@@ -106,7 +106,7 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
     # 1) PHASE DE DÉCOLLAGE
     # ==========================
     dist_TO_ft, t_TO_s, h_hist = groundrun(
-        aero.v_trans_kts * 1.6878, weight, aero.alpha_trans_deg, aero.alpha_ini_deg, h_airport, dT_isa, 1.0, aero.CL_max_TO
+        aero.v_trans_kts * 1.6878, weight, aero.alpha_trans_deg, aero.alpha_ini_deg, h_airport, dT_isa, 1.0, aero.cl_max_15
     )
 
     weight_decollage = h_hist['weight'][-1]

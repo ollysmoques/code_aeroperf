@@ -42,7 +42,7 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
     # 1) PHASE DE DÉCOLLAGE (FIXE)
     # ==========================
     dist_TO_ft, t_TO_s, h_hist = groundrun(
-        aero.v_trans_kts * 1.6878, weight, aero.alpha_trans_deg, aero.alpha_ini_deg, h_airport, dT_isa, 1.0, aero.CL_max_TO
+        aero.v_trans_kts * 1.6878, weight, aero.alpha_trans_deg, aero.alpha_ini_deg, h_airport, dT_isa, 1.0, aero.cl_max_15
     )
     weight_decollage = h_hist['weight'][-1]
     weight = weight_decollage
@@ -210,8 +210,9 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
         dist_landing_roll_ft, t_land_s, hist_roll = landing_groundroll(
             weight_initial=w_physics_landing, h_ft=h_airport, dT_isa=dT_isa, V_td_ft_s=V_td_ft_s, 
             power_setting=IDLE_POWER_SETTING, 
-            alpha_td_deg= 4,
-            mu_brake = 0.4
+            alpha_td_deg=4,
+            mu_brake=0.4,
+            mu_rolling=aero.mu_TO
         )
         t_land = t_land_s / 60.0
         d_land_nm = dist_landing_roll_ft / 6076.12
