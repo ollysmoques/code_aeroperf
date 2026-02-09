@@ -287,7 +287,7 @@ if __name__ == "__main__":
     
     # Inputs utilisateur (Simulés ici)
     # Exemple: On impose 3 heures de vol (180 min)
-    TIME_IMPOSED_MIN = 30 # <--- MODIFIER ICI
+    TIME_IMPOSED_MIN = 25 # <--- MODIFIER ICI
     
     # Paramètres de base (idem Flight_phases.py)
     fc_default, geom, aero = get_default_inputs()

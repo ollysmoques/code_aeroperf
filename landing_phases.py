@@ -42,6 +42,9 @@ def approach_and_flare(hpi, hpf, h_flare, dT_isa, V_app_kts, weight_initial, sre
     Returns:
         temps_total [min], distance_total [NM], Fuel_tot [lb], weight_final [lbf], V_td_kts [kts]
     """
+    print(f"\n========== APPROCHE ET ARRONDI ==========")
+    print(f"Vitesse au début d'approche: {V_app_kts:.2f} kts")
+    
     dh = 5.0          # Pas de pression [ft]
     hp1 = hpi         
     weight = weight_initial
@@ -53,7 +56,7 @@ def approach_and_flare(hpi, hpf, h_flare, dT_isa, V_app_kts, weight_initial, sre
     
     # 1. Calcul de V_TD pour la fin du segment (via Vs)
     Vs_ft_s, _ = v_touchdown(hpi, dT_isa, weight_initial, CL_MAX_LANDING, sref)
-    V_td_kts = Vs_ft_s / 1.6878 * 1.15 
+    V_td_kts = Vs_ft_s / 1.6878 * 1.15
     
 
     # ==========================================================
@@ -107,6 +110,9 @@ def approach_and_flare(hpi, hpf, h_flare, dT_isa, V_app_kts, weight_initial, sre
     # PHASE 2 : FLARE (Arrondi) (h_flare -> hpf=0 ft)
     # L'avion décélère verticalement et horizontalement.
     # ==========================================================
+    print(f"Vitesse au début du flare: {V_app_kts:.2f} kts")
+    print("=========================================\n")
+    
     h_start_flare = h_flare
     
     # Estimation de la distance de flare (Formule simplifiée Gudmundsson)

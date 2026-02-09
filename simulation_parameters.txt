@@ -8,9 +8,9 @@ h_airport_ft                  : 0
 dT_isa_C                      : 0
 VY_kts                        : 75
 V_cruise_CAS_kts              : 108
-TO_weight_lb                  : 378.0
-Weight_Reserve_lb             : 303.0
-Calculated_Range_NM           : 72.63229997238017
+TO_weight_lb                  : 399.9
+Weight_Reserve_lb             : 324.9
+Calculated_Range_NM           : 69.2961268022433
 
 --- 2. AIRCRAFT DEFINITION (aero) ---
 {   'AR_emp': 6.0,
@@ -22,8 +22,8 @@ Calculated_Range_NM           : 72.63229997238017
     'IF_tail_key': 'h_tail_lockheed_electra',
     'IF_wing_key': 'low_wing_unfilleted',
     'MAC': 2.3,
-    'MAX_TO': 378.0,
-    'OEW': 126.0,
+    'MAX_TO': 399.9,
+    'OEW': 147.9,
     'PAYLOAD': 170,
     'RESERVE': 7.0,
     'alpha_ini_deg': 6.0,
@@ -31,9 +31,9 @@ Calculated_Range_NM           : 72.63229997238017
     'alpha_trans_deg': 3.0,
     'b_h_stab': 6.0,
     'cg_mac': 0.2,
-    'cl_max_15': 1.6,
-    'cl_max_30': 1.75,
-    'cl_max_clean': 1.5,
+    'cl_max_15': 1.57,
+    'cl_max_30': 1.68,
+    'cl_max_clean': 1.45,
     'cp_mac': 0.25,
     'dT_isa_TO': 0.0,
     'h_TO_ft': 0.0,

@@ -29,10 +29,8 @@ def v_lof_v_r(h_ft,dT_isa,weight,CL_max,sref):
     
     v_r = 1.35*Vs_ft_s
     v_lof = 1.45*Vs_ft_s
-    
+
     return v_r, v_lof
-    
-    
     
     
 def sumforce(mu, h_ft, dT_isa, V, weight, alpha, thrust_lbf, cg_mac_current):
@@ -152,6 +150,11 @@ dist_totale, t_total, h = groundrun(v_trans, weight, alpha_trans, alpha_ini, h_f
 
 print(f"Distance totale: {dist_totale:.2f} ft")
 print(f"Temps total: {t_total:.2f} s")
+
+# Afficher la vitesse de takeoff
+v_takeoff_ft_s = h['v'][-1]
+v_takeoff_kts = v_takeoff_ft_s / 1.6878
+print(f"Vitesse de takeoff: {v_takeoff_kts:.2f} kts ({v_takeoff_ft_s:.2f} ft/s)")
 
 # --- PLOTTING (Mise à jour pour 4 graphiques) ---
 # On passe à 4 lignes (nrows=4) et on augmente la hauteur (figsize)
