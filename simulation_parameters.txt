@@ -3,14 +3,14 @@
 ========================================================
 
 --- 1. MISSION INPUTS ---
-h_cruise_ft                   : 3000
+h_cruise_ft                   : 2000
 h_airport_ft                  : 0
 dT_isa_C                      : 0
 VY_kts                        : 75
 V_cruise_CAS_kts              : 108
 TO_weight_lb                  : 399.9
 Weight_Reserve_lb             : 324.9
-Calculated_Range_NM           : 69.2961268022433
+Calculated_Range_NM           : 75.97860095159521
 
 --- 2. AIRCRAFT DEFINITION (aero) ---
 {   'AR_emp': 6.0,
@@ -31,9 +31,9 @@ Calculated_Range_NM           : 69.2961268022433
     'alpha_trans_deg': 3.0,
     'b_h_stab': 6.0,
     'cg_mac': 0.2,
-    'cl_max_15': 1.57,
-    'cl_max_30': 1.68,
-    'cl_max_clean': 1.45,
+    'cl_max_15': 1.9,
+    'cl_max_30': 1.98,
+    'cl_max_clean': 1.63,
     'cp_mac': 0.25,
     'dT_isa_TO': 0.0,
     'h_TO_ft': 0.0,

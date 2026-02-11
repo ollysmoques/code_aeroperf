@@ -303,6 +303,50 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
     
     return results
 
+
+def plot_mission_fuel_analysis(res):
+    w = res["weights_lb"]
+    
+    # Calcul du fuel consommé par phase (lb)
+    fuel_phases = {
+        "Takeoff":      w["start"] - w["after_takeoff"],
+        "Acceleration": w["after_takeoff"] - w["after_accel"],
+        "Climb":        w["after_accel"] - w["top_climb"],
+        "Cruise":       w["top_climb"] - w["top_descent"],
+        "Descent":      w["top_descent"] - w["final_1000ft"],
+        "Approach":     w["final_1000ft"] - w["touchdown"],
+        "Ground Roll":  w["touchdown"] - w["final"]
+    }
+
+    phases = list(fuel_phases.keys())
+    values = list(fuel_phases.values())
+    total_fuel = sum(values)
+
+    # Graphique 1 : Histogramme de consommation
+    plt.figure(figsize=(12, 6))
+    bars = plt.bar(phases, values, color='royalblue', edgecolor='black', alpha=0.8)
+    plt.ylabel('Fuel Burned [lb]', fontweight='bold')
+    plt.title(f'Fuel Consumption per Flight Phase (Total: {total_fuel:.2f} lb)', fontweight='bold')
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+    
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2, yval + (max(values)*0.01), 
+                 f'{yval:.2f} lb', ha='center', va='bottom', fontsize=10)
+
+    plt.tight_layout()
+    plt.savefig("fuel_burn_per_phase.png")
+    plt.close()
+
+    # Graphique 2 : Répartition en pourcentage
+    plt.figure(figsize=(8, 8))
+    plt.pie(values, labels=phases, autopct='%1.1f%%', startangle=140, 
+            colors=plt.cm.viridis(np.linspace(0, 1, len(phases))),
+            explode=[0.05 if v == max(values) else 0 for v in values]) # Met en évidence la phase max
+    plt.title('Fuel Burn Distribution', fontweight='bold')
+    plt.savefig("fuel_distribution_pie.png")
+    plt.close()
+
 # =================================================================
 # MAIN EXECUTION
 # =================================================================
@@ -396,6 +440,9 @@ if __name__ == "__main__":
         fuel_remaining = w_final - OEW_PAYLOAD
         print(f"  -> Temps total: {res['total_time_simulated']:.2f} min")
         print(f"  -> Fuel Restant: {fuel_remaining:.2f} lb")
+
+    plot_mission_fuel_analysis(res)
+    print("Graphs 'fuel_burn_per_phase.png' and 'fuel_distribution_pie.png' generated.")
 
     # Mise en forme du graphique
     plt.title(f"Mission Profile Sensitivity to Temperature\n(Target Cruise Altitude: {h_cruise:.0f} ft)")
