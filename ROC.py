@@ -154,8 +154,8 @@ Vy_10000ft  = CAS_list[idx_10000ft]
 ROCmax_0ft     = ROC_0ft[idx_0ft]
 ROCmax_10000ft = ROC_10000ft[idx_10000ft]
 
-print(f"Vy à 0 ft     ≈ {Vy_0ft:.1f} kts, ROC_max ≈ {ROCmax_0ft:.0f} ft/min")
-print(f"Vy à {MISSION_HEIGHT_FT:.0f} ft ≈ {Vy_10000ft:.1f} kts, ROC_max ≈ {ROCmax_10000ft:.0f} ft/min")
+print(f"Vy à 0 ft     ~= {Vy_0ft:.1f} kts, ROC_max ~= {ROCmax_0ft:.0f} ft/min")
+print(f"Vy à {MISSION_HEIGHT_FT:.0f} ft ~= {Vy_10000ft:.1f} kts, ROC_max ~= {ROCmax_10000ft:.0f} ft/min")
 
 # --- Trace 2D ---
 plt.figure(figsize=(8,5))
@@ -166,8 +166,8 @@ plt.plot(CAS_list, ROC_10000ft, label=f"Altitude = {MISSION_HEIGHT_FT:.0f} ft", 
 plt.scatter(Vy_0ft, ROCmax_0ft, color='blue', marker='o')
 plt.scatter(Vy_10000ft, ROCmax_10000ft, color='orange', marker='o')
 
-plt.text(Vy_0ft, ROCmax_0ft,  f" Vy0 ≈ {Vy_0ft:.0f} kt",  fontsize=8, ha='left', va='bottom')
-plt.text(Vy_10000ft, ROCmax_10000ft, f" Vy10k ≈ {Vy_10000ft:.0f} kt", fontsize=8, ha='left', va='bottom')
+plt.text(Vy_0ft, ROCmax_0ft,  f" Vy0 ~= {Vy_0ft:.0f} kt",  fontsize=8, ha='left', va='bottom')
+plt.text(Vy_10000ft, ROCmax_10000ft, f" Vy10k ~= {Vy_10000ft:.0f} kt", fontsize=8, ha='left', va='bottom')
 
 plt.axhline(0, color='black', linewidth=0.8)
 

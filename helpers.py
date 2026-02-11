@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
-def get_cl_0(flaps, folder_name = 'wing_polar'):
+def get_cl_0(flaps, folder_name=None):
     
     '''
     Uses linear interpolation to find CL_0 value
@@ -12,10 +13,13 @@ def get_cl_0(flaps, folder_name = 'wing_polar'):
     :type file: str
     '''
 
+    if folder_name is None:
+        folder_name = os.path.join(os.path.dirname(__file__), 'wing_polar')
+
     assert flaps in [0,15,30], 'ERROR: flaps position 0, 15 or 30'
 
-    cl_filename = folder_name + f'/CL_f{flaps}.npy'
-    alpha_filename = folder_name + f'/alphas_f{flaps}.npy'
+    cl_filename = os.path.join(folder_name, f'CL_f{flaps}.npy')
+    alpha_filename = os.path.join(folder_name, f'alphas_f{flaps}.npy')
 
     try:
         cl_vect = np.load(cl_filename)
@@ -23,13 +27,14 @@ def get_cl_0(flaps, folder_name = 'wing_polar'):
 
     except FileNotFoundError as e:
         print(f"Error: {e}, fournir le bon dossier et s'assurer que polaire de forme CL_f30.npy exemple")
+        raise e
     
     cl_o_value = np.interp(0,alpha_vect,cl_vect)
 
     return cl_o_value
 
 
-def get_cl_alpha(flaps, folder_name = 'wing_polar'):
+def get_cl_alpha(flaps, folder_name=None):
 
     '''
     Computes Cl alpha value for givent polar, gives averaged value for first 15 values 
@@ -41,10 +46,13 @@ def get_cl_alpha(flaps, folder_name = 'wing_polar'):
     :type file: str
     '''
 
+    if folder_name is None:
+        folder_name = os.path.join(os.path.dirname(__file__), 'wing_polar')
+
     assert flaps in [0,15,30], 'ERROR: flaps position 0, 15 or 30'
 
-    cl_filename = folder_name + f'/CL_f{flaps}.npy'
-    alpha_filename = folder_name + f'/alphas_f{flaps}.npy'
+    cl_filename = os.path.join(folder_name, f'CL_f{flaps}.npy')
+    alpha_filename = os.path.join(folder_name, f'alphas_f{flaps}.npy')
 
     try:
         cl_vect = np.load(cl_filename)
@@ -52,13 +60,14 @@ def get_cl_alpha(flaps, folder_name = 'wing_polar'):
 
     except FileNotFoundError as e:
         print(f"Error: {e}, fournir le bon dossier et s'assurer que polaire de forme CL_f30.npy exemple")
+        raise e
 
     cl_alpha_vect = cl_vect/alpha_vect
     cl_alpha_value = np.mean(cl_alpha_vect)
     
     return cl_alpha_value
 
-def get_wing_cl_cd_from_aoa(aoa, flaps, folder_name = 'wing_polar'):
+def get_wing_cl_cd_from_aoa(aoa, flaps, folder_name=None):
     
     '''
     Gets a CL value for wing polar when given a CL value, uses linear interpolation to find the 
@@ -74,11 +83,14 @@ def get_wing_cl_cd_from_aoa(aoa, flaps, folder_name = 'wing_polar'):
     returns CL, CD (total) wing values
     '''
 
+    if folder_name is None:
+        folder_name = os.path.join(os.path.dirname(__file__), 'wing_polar')
+
     assert flaps in [0,15,30], 'ERROR: flaps position 0, 15 or 30'
 
-    cl_filename = folder_name + f'/CL_f{flaps}.npy'
-    cd_filename = folder_name + f'/CD_f{flaps}.npy'
-    alpha_filename = folder_name + f'/alphas_f{flaps}.npy'
+    cl_filename = os.path.join(folder_name, f'CL_f{flaps}.npy')
+    cd_filename = os.path.join(folder_name, f'CD_f{flaps}.npy')
+    alpha_filename = os.path.join(folder_name, f'alphas_f{flaps}.npy')
 
     try:
         cl_vect = np.load(cl_filename)
@@ -87,13 +99,14 @@ def get_wing_cl_cd_from_aoa(aoa, flaps, folder_name = 'wing_polar'):
 
     except FileNotFoundError as e:
         print(f"Error: {e}, fournir le bon dossier et s'assurer que polaire de forme CL_f30.npy exemple")
+        raise e
     
     cl_value = np.interp(aoa,alpha_vect,cl_vect)
     cd_value = np.interp(aoa,alpha_vect,cd_vect)
 
     return cl_value, cd_value
 
-def get_cdi_wing(aoa, flaps, folder_name = 'wing_polar'):
+def get_cdi_wing(aoa, flaps, folder_name=None):
 
     '''
     returns Cdi of wing based on given aoa and polar files
@@ -106,10 +119,13 @@ def get_cdi_wing(aoa, flaps, folder_name = 'wing_polar'):
     :type file: str
     '''
 
+    if folder_name is None:
+        folder_name = os.path.join(os.path.dirname(__file__), 'wing_polar')
+
     assert flaps in [0,15,30], 'ERROR: flaps position 0, 15 or 30'
 
-    cdi_filename = folder_name + f'/CD_f{flaps}.npy'
-    alpha_filename = folder_name + f'/alphas_f{flaps}.npy'
+    cdi_filename = os.path.join(folder_name, f'CD_f{flaps}.npy')
+    alpha_filename = os.path.join(folder_name, f'alphas_f{flaps}.npy')
 
     try:
         cdi_vect = np.load(cdi_filename)
@@ -117,12 +133,13 @@ def get_cdi_wing(aoa, flaps, folder_name = 'wing_polar'):
 
     except FileNotFoundError as e:
         print(f"Error: {e}, fournir le bon dossier et s'assurer que polaire de forme CL_f30.npy exemple")
+        raise e
     
     cdi_value = np.interp(aoa,alpha_vect,cdi_vect)
 
     return cdi_value
 
-def get_alpha_from_cl(cl_value, flaps, folder_name = 'wing_polar'):
+def get_alpha_from_cl(cl_value, flaps, folder_name=None):
     
     '''
     Computes a wing angle of attack from a given wing CL
@@ -136,10 +153,13 @@ def get_alpha_from_cl(cl_value, flaps, folder_name = 'wing_polar'):
     returns: angle of attack [deg]
     '''
 
+    if folder_name is None:
+        folder_name = os.path.join(os.path.dirname(__file__), 'wing_polar')
+
     assert flaps in [0,15,30], 'ERROR: flaps position 0, 15 or 30'
 
-    cl_filename = folder_name + f'/CL_f{flaps}.npy'
-    alpha_filename = folder_name + f'/alphas_f{flaps}.npy'
+    cl_filename = os.path.join(folder_name, f'CL_f{flaps}.npy')
+    alpha_filename = os.path.join(folder_name, f'alphas_f{flaps}.npy')
 
     try:
         cl_vect = np.load(cl_filename)
@@ -147,6 +167,7 @@ def get_alpha_from_cl(cl_value, flaps, folder_name = 'wing_polar'):
 
     except FileNotFoundError as e:
         print(f"Error: {e}, fournir le bon dossier et s'assurer que polaire de forme CL_f30.npy exemple")
+        raise e
     
     alpha_value = np.interp(cl_value,cl_vect,alpha_vect)
 

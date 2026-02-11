@@ -268,6 +268,29 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
     # Calcul du temps total réel simulé
     total_time_simulated = sum(t_dict.values())
     total_dist_simulated = sum(d_dict.values())
+
+    print("\n========== FLIGHT PROFILE SUMMARY ==========")
+    print(f"Total time         : {total_time_simulated:.2f} min ({total_time_simulated/60:.2f} h)")
+    print(f"Total distance     : {total_dist_simulated:.2f} NM")
+    print("--------------------------------------")
+    print("WEIGHTS BY PHASE :")
+    print(f"  Start mission        : {weight_start:.2f} lb")
+    print(f"  After takeoff      : {weight_decollage:.2f} lb")
+    print(f"  After acceleration   : {weight_after_accel:.2f} lb")
+    print(f"  Top of climb     : {weight_top_climb:.2f} lb")
+    print(f"  Start descent    : {w_top_descent:.2f} lb")
+    print(f"  Final (1000 ft)      : {w_final_1000ft:.2f} lb")
+    print(f"  Touchdown : {w_touchdown:.2f} lb")
+    print(f"  Final Mission (Arrêt): {w_final:.2f} lb")
+    print("--------------------------------------")
+    print("TIME BY PHASE :")
+    print(f"  Takeoff      : {t_dict['takeoff']:.2f} min")
+    print(f"  Acceleration   : {t_dict['accel']:.2f} min")
+    print(f"  Climb         : {t_dict['climb']:.2f} min")
+    print(f"  Cruise      : {t_dict['cruise']:.2f} min")
+    print(f"  Descent       : {t_dict['descent']:.2f} min")
+    print(f"  Approach/Flare : {t_dict['approach']:.2f} min")
+    print(f"  Ground roll  : {t_dict['groundroll']:.2f} min")
     
     results = {
         "weights_lb": w_dict,
@@ -293,7 +316,6 @@ if __name__ == "__main__":
     fc_default, geom, aero = get_default_inputs()
     
     h_cruise = MISSION_HEIGHT_FT
-    dT_Isa = 0
     h_airport = 0
     V_cruise_CAS = 108
     VY = 75
@@ -311,86 +333,79 @@ if __name__ == "__main__":
     print(f"Fuel Total à bord   : {TOTAL_FUEL_AVAILABLE_LB} lb")
     print(f"Zero Fuel Weight    : {OEW_PAYLOAD} lb")
     
-    # Exécution de la simulation
-    res = FLIGHT_PHASES_TIME_IMPOSED(TIME_IMPOSED_MIN, h_cruise, h_airport, dT_Isa, VY, V_cruise_CAS, TO_weight)
+    # Configurations à tester : (dT_isa, Label, Style)
+    configs = [
+        (0,   "ISA (Standard)", "k-",  2.0),
+        (-15, "ISA - 15°C",    "C0--", 1.5),
+        (15,  "ISA + 15°C",    "C3--", 1.5)
+    ]
     
-    w_final = res["weights_lb"]["final"]
-    total_time = res["total_time_simulated"]
-    
-    fuel_remaining = w_final - OEW_PAYLOAD
-    
-    print("\n========== RÉSULTATS ==========")
-    print(f"Temps total simulé : {total_time:.2f} min (Cible: {TIME_IMPOSED_MIN})")
-    print(f"Poids Final        : {w_final:.2f} lb")
-    print(f"Fuel Restant (est.): {fuel_remaining:.2f} lb")
-    
-    # Vérification du fuel
-    if fuel_remaining < 0:
-        print(f"\n[ATTENTION] La mission consomme plus de fuel que disponible !")
-        print(f"Déficit de fuel : {abs(fuel_remaining):.2f} lb")
-    else:
-        print(f"\n[OK] Mission réalisable avec le fuel actuel.")
-        
-        # --- CALCUL DU TEMPS DE CROISIÈRE ÉQUIVALENT RESTANT ---
-        # On regarde combien de temps de croisière on pourrait ajouter avec ce fuel restant,
-        # en supposant qu'on l'aurait brûlé EN CROISIÈRE (donc avant la descente).
-        # C'est une approximation : si on avait volé plus longtemps, on aurait atterri plus léger.
-        # Ici on prend le fuel restant et on divise par le fuel flow moyen à la fin de la croisière simulée.
-        
-        # Pour être plus précis, on peut calculer le Fuel Flow à "w_dict['top_descent']" (fin de croisière)
-        w_end_cruise = res["weights_lb"]["top_descent"]
-        cg_end_cruise = compute_cg_mac(w_end_cruise)
-        
-        # Condition de vol fin de croisière
-        cond_end = compute_cruise_condition(V_cruise_CAS, h_cruise, dT_Isa, w_end_cruise, cg_end_cruise)
-        ff_end_lb_min = cond_end['Fuel_flow_lb_per_min']
-        
-        equivalent_cruise_time_min = fuel_remaining / ff_end_lb_min
-        
-        print(f"Fuel Flow fin de croisière : {ff_end_lb_min:.4f} lb/min")
-        print(f"-> Temps de croisière supplémentaire possible : {equivalent_cruise_time_min:.1f} min")
-        print(f"-> Soit {equivalent_cruise_time_min/60:.2f} heures supplémentaires.")
-    
-    # ==========================
-    # GRAPHICS
-    # ==========================
-    w_dict = res["weights_lb"]
-    t_dict = res["times_min"]
-    
-    times = [0]
-    weights = [w_dict["start"]]
-    
-    stage_keys = ["takeoff", "accel", "climb", "cruise", "descent", "approach", "groundroll"]
-    stage_weights_keys = ["after_takeoff", "after_accel", "top_climb", "top_descent", "final_1000ft", "touchdown", "final"]
-    
-    # Construction des listes pour le plot
-    for i, key in enumerate(stage_keys):
-        dt = t_dict[key]
-        w_val = w_dict[stage_weights_keys[i]]
-        times.append(times[-1] + dt)
-        weights.append(w_val)
-        
     plt.figure(figsize=(10, 6))
-    plt.plot(times, weights, 'o-', color='#0B5A81', linewidth=2)
-    
-    # Zone de réserve (Fuel min)
-    # Limite théorique : OEW + RESERVE (mais ici on regarde par rapport au OEW + Payload si on veut savoir si on tape dans la réserve ?)
-    # Le "Zero Fuel Weight" est la limite dure. La réserve est une sécurité.
-    plt.axhline(OEW_PAYLOAD, color='red', linestyle='--', label='Zero Fuel Weight (OEW+Payload)')
-    plt.axhline(OEW_PAYLOAD + aero.RESERVE, color='orange', linestyle=':', label='Reserve Limit')
-    
-    plt.title(f"Fuel Burn Profile - Time Imposed: {TIME_IMPOSED_MIN} min")
-    plt.xlabel("Time [min]")
-    plt.ylabel("Aircraft Weight [lb]")
-    plt.grid(True)
-    plt.legend()
-    
-    # Annotations
-    if fuel_remaining > 0:
-        plt.text(times[-1], weights[-1] + 5, f"Fuel Left: {fuel_remaining:.1f} lb", color='green', fontweight='bold')
-    else:
-        plt.text(times[-1], weights[-1] - 5, f"Fuel Deficit: {abs(fuel_remaining):.1f} lb", color='red', fontweight='bold')
 
+    for dT_Isa, label, style, width in configs:
+        print(f"\nRunning simulation for {label}...")
+        # Exécution de la simulation
+        res = FLIGHT_PHASES_TIME_IMPOSED(TIME_IMPOSED_MIN, h_cruise, h_airport, dT_Isa, VY, V_cruise_CAS, TO_weight)
+        
+        t_dict = res["times_min"]
+        
+        # Construction des points temporels et d'altitude pour le plot
+        # On suppose les altitudes suivantes pour les phases :
+        # - Start: h_airport
+        # - Takeoff: h_airport
+        # - Accel: h_airport (approx, technically +50ft)
+        # - Climb: h_cruise
+        # - Cruise: h_cruise
+        # - Descent: 1000 ft (h_descent_end)
+        # - Approach: h_airport
+        # - Groundroll: h_airport
+        
+        # Phases ordonnées
+        phases = ["takeoff", "accel", "climb", "cruise", "descent", "approach", "groundroll"]
+        
+        # Altitudes de FIN de phase
+        h_end_phases = {
+            "takeoff": h_airport,
+            "accel": h_airport, # Approx
+            "climb": h_cruise,
+            "cruise": h_cruise,
+            "descent": 1000.0, # h_descent_end defined inside function
+            "approach": h_airport,
+            "groundroll": h_airport
+        }
+        
+        times = [0.0]
+        altitudes = [h_airport]
+        
+        current_time = 0.0
+        
+        for phase in phases:
+            dt = t_dict[phase]
+            h_target = h_end_phases[phase]
+            
+            # Ajout du point de fin de phase
+            current_time += dt
+            times.append(current_time)
+            altitudes.append(h_target)
+
+        # Plot de la courbe
+        plt.plot(times, altitudes, style, linewidth=width, label=label)
+        
+        # Affichage résultats textuels pour cette config
+        w_final = res["weights_lb"]["final"]
+        fuel_remaining = w_final - OEW_PAYLOAD
+        print(f"  -> Temps total: {res['total_time_simulated']:.2f} min")
+        print(f"  -> Fuel Restant: {fuel_remaining:.2f} lb")
+
+    # Mise en forme du graphique
+    plt.title(f"Mission Profile Sensitivity to Temperature\n(Target Cruise Altitude: {h_cruise:.0f} ft)")
+    plt.xlabel("Flight Time [min]")
+    plt.ylabel("Altitude [ft]")
+    plt.grid(True, linestyle=':', alpha=0.7)
+    plt.legend()
+    plt.ylim(bottom=0, top=h_cruise * 1.2) # Marge au dessus
+    
     plt.tight_layout()
-    plt.savefig("time_imposed_profile.png")
+    plt.savefig("time_imposed_profile_sensitivity.png")
+    print("\nGraph saved as 'time_imposed_profile_sensitivity.png'")
     plt.show()
