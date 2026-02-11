@@ -294,9 +294,9 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
         h_TO_ft = 0.0,
         dT_isa_TO       = 0.0,
         mu_TO           = 0.04,
-        cl_max_clean = 1.45,
-        cl_max_15 = 1.57,
-        cl_max_30 = 1.68,
+        cl_max_clean = 1.63,
+        cl_max_15 = 1.90,
+        cl_max_30 = 1.98,
 
         # ---- masses ----
         OEW       = 147.9,
