@@ -99,6 +99,9 @@ def drag_total(h_ft, dT_isa, V_kts, weight_lbf, cg_mac_current, thrust, config, 
             h_v_stab   = aero.h_v_stab,
             b_h_stab   = aero.b_h_stab)
         cl_tot = weight_lbf/(q_psf * geom.S_ref)
+        print('============= FLIGHT angle of attack ==============')
+        print("angle d'attaque de l'aile:   ", wing_aoa, " degrees")
+        
         cl_wing, cd_wing = get_wing_cl_cd_from_aoa(wing_aoa, flap_defl_deg)
 
     cdi_total = cdi_wing + cdi_emp
@@ -131,7 +134,10 @@ def drag_total(h_ft, dT_isa, V_kts, weight_lbf, cg_mac_current, thrust, config, 
     
     print(f"{'CL_total':<16} = {cl_tot:.5f}")
 
-    return cl_tot, d_total, q_psf
+    if not on_ground:
+        alpha = wing_aoa
+
+    return cl_tot, d_total, q_psf, alpha
 
 
 

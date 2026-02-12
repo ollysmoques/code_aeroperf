@@ -38,7 +38,7 @@ def compute_cruise_condition(CAS_kts, h_ft, dT_isa, weight_lbf, cg_mac_current):
     Mach    = speed["mach"]
 
     # --- Calcul du drag total ---
-    CL, Drag_lbf, _ = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current, weight_lbf, 'cruise')
+    CL, Drag_lbf, _, angle_of_attack = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current, weight_lbf, 'cruise')
 
     # ============================
     # Trouver Power Setting tel que Thrust = Drag
@@ -76,6 +76,7 @@ def compute_cruise_condition(CAS_kts, h_ft, dT_isa, weight_lbf, cg_mac_current):
         "Thrust_required": thrust_required,
         "Power_setting": PS_required,
         "Fuel_flow_lb_per_min": fuel_flow,
+        'angle_of_attack': angle_of_attack
     }
 
     return result
@@ -171,6 +172,7 @@ if __name__ == "__main__":
     print(f"Thrust required:   {out['Thrust_required']:.2f} lbf")
     print(f"Power setting:     {100*out['Power_setting']:.1f} %")
     print(f"Fuel flow:         {out['Fuel_flow_lb_per_min']:.4f} lb/min")
+    print(f"angle of attack at cruise  {out['angle_of_attack']} degrees")
     print("==================================\n")
     
     Range, delta_t = compute_cruise_range_time(370, 350, 108, MISSION_HEIGHT_FT, 0)
