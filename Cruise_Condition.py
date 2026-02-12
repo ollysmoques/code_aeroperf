@@ -37,27 +37,50 @@ def compute_cruise_condition(CAS_kts, h_ft, dT_isa, weight_lbf, cg_mac_current):
     q_psf   = speed["pression dynamique"]
     Mach    = speed["mach"]
 
-    # --- Calcul du drag total ---
-    CL, Drag_lbf, _, angle_of_attack = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current, weight_lbf, 'cruise')
+    thrust_required = 500
+    not_stop = True
+    i = 1
 
-    # ============================
-    # Trouver Power Setting tel que Thrust = Drag
-    # ============================
+    tol = 1e-7
+    max_iter = 100
 
-    # Fonction thrust = f(power_setting)
-    def thrust_from_PS(PS):
-        thrust, _ = thrust_sw400pro_ft_lbf(h_ft, dT_isa, PS)
-        return thrust
+    while not_stop and i <= max_iter:
+        print('ITERATION', i)
+        i += 1
 
-    # On balaie le power setting de 0 → 1
-    PS_vals = np.linspace(0, 1.0, 200)
-    thrust_vals = np.array([thrust_from_PS(ps) for ps in PS_vals])
+        # Save previous thrust (T_{k-1})
+        T1 = float(thrust_required)
 
-    # Trouver où thrust ≈ drag
-    idx = np.argmin(np.abs(thrust_vals - Drag_lbf))
-    PS_required = PS_vals[idx]
-    thrust_required = thrust_vals[idx]
+        # --- Calcul du drag total (uses current thrust guess) ---
+        CL, Drag_lbf, _, angle_of_attack = drag_total(
+            h_ft, dT_isa, TAS_kts,
+            weight_lbf, cg_mac_current,
+            thrust_required, 'cruise'
+        )
+        def thrust_from_PS(PS):
+            thrust, _ = thrust_sw400pro_ft_lbf(h_ft, dT_isa, PS)
+            return float(thrust)
 
+        PS_vals = np.linspace(0.0, 1.0, 200)
+        thrust_vals = np.array([thrust_from_PS(ps) for ps in PS_vals])
+
+        idx = int(np.argmin(np.abs(thrust_vals - Drag_lbf)))
+        PS_required = float(PS_vals[idx])
+        thrust_required = float(thrust_vals[idx])
+
+        # New thrust (T_k)
+        T2 = float(thrust_required)
+
+        # Convergence based on successive thrust change
+        dT = abs(T2 - T1)
+
+        if dT <= tol:
+            not_stop = False
+            print(f'converged for drag and thrust at cruise with {i} iterations')
+
+    # optional: if hit max_iter without converging
+    if not_stop:
+        print(f'WARNING: did not converge in {max_iter} iterations. Last dThrust={dT}')
     # Fuel flow correspondant
     _, fuel_flow = thrust_sw400pro_ft_lbf(h_ft, dT_isa, PS_required)
 
@@ -173,10 +196,11 @@ if __name__ == "__main__":
     print(f"Power setting:     {100*out['Power_setting']:.1f} %")
     print(f"Fuel flow:         {out['Fuel_flow_lb_per_min']:.4f} lb/min")
     print(f"angle of attack at cruise  {out['angle_of_attack']} degrees")
+    print(f"cg postion {cg_mac} %MAC")
     print("==================================\n")
     
-    Range, delta_t = compute_cruise_range_time(370, 350, 108, MISSION_HEIGHT_FT, 0)
+    #Range, delta_t = compute_cruise_range_time(370, 350, 108, MISSION_HEIGHT_FT, 0)
 
-    print('Distance NM:',Range)
-    print('Temps de vol en croisière min:',delta_t)    
+    #print('Distance NM:',Range)
+    #print('Temps de vol en croisière min:',delta_t)    
     
