@@ -302,6 +302,12 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
         "times_min": t_dict,
         "ranges_NM": d_dict,
         "landing_history": history_roll, # Ajout de l'historique pour l'affichage externe
+        "speeds_kts": {
+            "takeoff_cas": CAS_kts_TO,
+            "cruise_cas": V_cruise_CAS,
+            "approach_cas": V_app_kts,
+            "touchdown_cas": V_td_kts
+        }
     }
 
     return results
@@ -323,6 +329,10 @@ try:
         "TO_weight_lb": TO_weight,
         "Weight_Reserve_lb": Weight_Reserve,
         "Calculated_Range_NM": res["ranges_NM"]["cruise"], # Ajout d'une sortie calculée
+        "V_Takeoff_CAS_kts": res["speeds_kts"]["takeoff_cas"],
+        "V_Cruise_CAS_kts": res["speeds_kts"]["cruise_cas"],
+        "V_Approach_CAS_kts": res["speeds_kts"]["approach_cas"],
+        "V_Touchdown_CAS_kts": res["speeds_kts"]["touchdown_cas"],
     }
 
     # Création du dictionnaire des objets avions (déjà définis globalement)
