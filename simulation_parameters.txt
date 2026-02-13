@@ -6,11 +6,15 @@
 h_cruise_ft                   : 2000
 h_airport_ft                  : 0
 dT_isa_C                      : 0
-VY_kts                        : 75
+VY_kts                        : 81
 V_cruise_CAS_kts              : 108
-TO_weight_lb                  : 399.9
-Weight_Reserve_lb             : 324.9
-Calculated_Range_NM           : 75.97860095159521
+TO_weight_lb                  : 412.0
+TIME_IMPOSED_MIN              : 25
+Calculated_Range_NM           : 29.211459013678898
+V_Takeoff_CAS_kts             : 60.49019932854635
+V_Cruise_CAS_kts              : 108
+V_Approach_CAS_kts            : 81
+V_Touchdown_CAS_kts           : 45.64071331439904
 
 --- 2. AIRCRAFT DEFINITION (aero) ---
 {   'AR_emp': 6.0,
@@ -22,15 +26,15 @@ Calculated_Range_NM           : 75.97860095159521
     'IF_tail_key': 'h_tail_lockheed_electra',
     'IF_wing_key': 'low_wing_unfilleted',
     'MAC': 2.3,
-    'MAX_TO': 399.9,
-    'OEW': 147.9,
+    'MAX_TO': 412.0,
+    'OEW': 160,
     'PAYLOAD': 170,
     'RESERVE': 7.0,
     'alpha_ini_deg': 6.0,
     'alpha_rot_deg': 6.0,
     'alpha_trans_deg': 3.0,
     'b_h_stab': 6.0,
-    'cg_mac': 0.2,
+    'cg_mac': 0.866,
     'cl_max_15': 1.9,
     'cl_max_30': 1.98,
     'cl_max_clean': 1.63,

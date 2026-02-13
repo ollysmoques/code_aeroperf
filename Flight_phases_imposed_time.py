@@ -11,6 +11,8 @@ from cg_shift import *
 from landing_run import *  
 from landing_phases import * 
 from Mission_parameters import MISSION_HEIGHT_FT
+from Flight_phases import save_run_parameters
+import os
 
 
 def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight_initial):
@@ -298,7 +300,13 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
         "ranges_NM": d_dict,
         "landing_history": history_roll,
         "total_time_simulated": total_time_simulated,
-        "total_dist_simulated": total_dist_simulated
+        "total_dist_simulated": total_dist_simulated,
+        "speeds_kts": {
+            "takeoff_cas": CAS_kts_TO,
+            "cruise_cas": V_cruise_CAS,
+            "approach_cas": V_app_kts,
+            "touchdown_cas": V_td_kts
+        }
     }
     
     return results
@@ -501,7 +509,7 @@ if __name__ == "__main__":
     h_cruise = MISSION_HEIGHT_FT
     h_airport = 0
     V_cruise_CAS = 108
-    VY = 75
+    VY = 81
     TO_weight = aero.MAX_TO # On part à pleine charge
     
     # Quantité de fuel "Max" disponible (Fuel Load + Reserve)
@@ -605,3 +613,35 @@ if __name__ == "__main__":
     plt.savefig("time_imposed_profile_sensitivity.png")
     print("\nGraph saved as 'time_imposed_profile_sensitivity.png'")
     plt.show()
+    
+    # SAUVEGARDE DES PARAMÈTRES
+    if res_std:
+        try:
+             # Création du dictionnaire des inputs de mission
+            mission_inputs = {
+                "h_cruise_ft": h_cruise,
+                "h_airport_ft": h_airport,
+                "dT_isa_C": 0, # Pour le cas standard
+                "VY_kts": VY,
+                "V_cruise_CAS_kts": V_cruise_CAS,
+                "TO_weight_lb": TO_weight,
+                "TIME_IMPOSED_MIN": TIME_IMPOSED_MIN,
+                "Calculated_Range_NM": res_std["ranges_NM"]["cruise"], 
+                "V_Takeoff_CAS_kts": res_std["speeds_kts"]["takeoff_cas"],
+                "V_Cruise_CAS_kts": res_std["speeds_kts"]["cruise_cas"],
+                "V_Approach_CAS_kts": res_std["speeds_kts"]["approach_cas"],
+                "V_Touchdown_CAS_kts": res_std["speeds_kts"]["touchdown_cas"],
+            }
+        
+            # Création du dictionnaire des objets avions
+            aircraft_objects = {
+                "fc": fc_default,
+                "geom": geom,
+                "aero": aero
+            }
+            
+            output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "simulation_parameters.txt")
+            save_run_parameters(output_path, mission_inputs, aircraft_objects)
+            
+        except Exception as e:
+            print(f"[WARNING] Could not save parameters report: {e}")

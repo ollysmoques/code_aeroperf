@@ -276,7 +276,7 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
 
         # ---- paramètres induits / stabilité ----
         Cm_emp   = -0.05,
-        cg_mac   = 0.20,
+        cg_mac   = 0.866,
         cp_mac   = 0.25,
         lt       = 6.355,
         MAC      = 2.30,
@@ -299,7 +299,7 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
         cl_max_30 = 1.98,
 
         # ---- masses ----
-        OEW       = 147.9,
+        OEW       = 160,
         FUEL_LOAD = 75.0,
         RESERVE   = 7.0,
         PAYLOAD   = 170,   # tu pourras changer ça plus tard

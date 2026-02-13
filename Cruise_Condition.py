@@ -135,8 +135,13 @@ def compute_cruise_range_time(Weight_initial, Weight_final, CAS_kts, h_ft, dT_is
     # Temps (min)
     TAS_kts_moyen = 0.5 * (TAS_kts_initial + TAS_kts_final)
     delta_t_min   = (Range_NM / TAS_kts_moyen) * 60.0
+
+    # Calculate average power setting
+    power_setting_initial = cruise_initial['Power_setting']
+    power_setting_final = cruise_final['Power_setting']
+    avg_power_setting = 0.5 * (power_setting_initial + power_setting_final)
     
-    return Range_NM, delta_t_min
+    return Range_NM, delta_t_min, avg_power_setting
     
     
 def compute_fuel_burned_for_time(delta_t_min, Weight_initial, CAS_kts, h_ft, dT_isa):
