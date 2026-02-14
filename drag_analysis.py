@@ -80,7 +80,7 @@ def run_case_equilibrium(h_ft, dT_isa, V_kts, weight_lbf, cg_mac_current, thrust
     speed = vitesses(
         atmosphere=atm,
         vitesse=V_kts,
-        type="vraie",
+        type="calibree",
         masse=weight_lbf,
         Sref=Sref,
         MAC=geom.wing.c_root,
@@ -170,35 +170,35 @@ def print_summary(name, res):
 
 # ---------------------- MAIN ---------------------- #
 if __name__ == "__main__":
-    W = 400
+    W = 358
     cg = 0.33
     thrust = 89
     dT_isa = 0.0
 
     res_to = run_case_equilibrium(
-        h_ft=0, dT_isa=dT_isa, V_kts=75,
+        h_ft=0, dT_isa=dT_isa, V_kts=51.4,
         weight_lbf=W, cg_mac_current=cg, thrust=thrust,
         flap_defl_deg=15
     )
 
     res_cr = run_case_equilibrium(
-        h_ft=10000, dT_isa=dT_isa, V_kts=100,
+        h_ft=10000, dT_isa=dT_isa, V_kts=108,
         weight_lbf=W, cg_mac_current=cg, thrust=thrust,
         flap_defl_deg=0
     )
 
     res_ld = run_case_equilibrium(
-        h_ft=0, dT_isa=dT_isa, V_kts=70,
+        h_ft=0, dT_isa=dT_isa, V_kts=75,
         weight_lbf=W, cg_mac_current=cg, thrust=thrust,
         flap_defl_deg=30
     )
 
     # Print requested info
-    print_summary("TAKE-OFF (equilibrium, flaps 15)", res_to)
-    print_summary("CRUISE (equilibrium, flaps 0)", res_cr)
-    print_summary("LANDING (equilibrium, flaps 30)", res_ld)
+    print_summary("TAKE-OFF ", res_to)
+    print_summary("CRUISE ", res_cr)
+    print_summary("LANDING ", res_ld)
 
     # 3 figures séparées (pie charts)
-    plot_single_pie("Take-off drag breakdown (equilibrium, flaps 15)", res_to["components"])
-    plot_single_pie("Cruise drag breakdown (equilibrium, flaps 0)", res_cr["components"])
-    plot_single_pie("Landing drag breakdown (equilibrium, flaps 30)", res_ld["components"])
+    plot_single_pie("Take-off drag breakdown", res_to["components"])
+    plot_single_pie("Cruise drag breakdown", res_cr["components"])
+    plot_single_pie("Landing drag breakdown", res_ld["components"])
