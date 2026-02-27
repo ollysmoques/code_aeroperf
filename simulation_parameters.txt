@@ -10,7 +10,7 @@ VY_kts                        : 75
 V_cruise_CAS_kts              : 108
 TO_weight_lb                  : 399.9
 Weight_Reserve_lb             : 324.9
-Calculated_Range_NM           : 75.97860095159521
+Calculated_Range_NM           : 75.80795026453863
 
 --- 2. AIRCRAFT DEFINITION (aero) ---
 {   'AR_emp': 6.0,

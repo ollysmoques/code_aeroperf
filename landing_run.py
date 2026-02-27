@@ -258,8 +258,9 @@ def plot_landing_analysis(h):
     """
     Génère les graphiques d'analyse pour le roulement à l'atterrissage.
     h: dictionnaire 'history' retourné par landing_groundroll containing lists of v, dist, etc.
+    Ajoute un 4ème subplot pour l'énergie cinétique (KE) le long de la distance.
     """
-    fig, axs = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+    fig, axs = plt.subplots(4, 1, figsize=(10, 14), sharex=True)
 
     v_kts = np.array(h['v']) / 1.6878
     dist_ft = np.array(h['dist'])
@@ -286,10 +287,22 @@ def plot_landing_analysis(h):
     axs[2].plot(dist_ft, h['lift'], label='Lift', color='teal')
     axs[2].plot(dist_ft, h['norme'], label='Weight on wheels (Norm)', color='grey', linestyle='--')
     axs[2].plot(dist_ft, h['weight'], label='Aircraft Weight', color='black', linestyle=':')
-    axs[2].set_xlabel('Distance [ft]')
     axs[2].set_ylabel('Vertical forces [lbf]')
     axs[2].legend(loc='upper right')
     axs[2].grid(True, alpha=0.3)
+
+    # Graphique 4 : Énergie cinétique (KE)
+    # KE = 0.5 * m * v^2 (avec m en slugs, v en ft/s) -> unité: ft*lbf
+    weights = np.array(h['weight'])
+    mass_slugs = weights / g0
+    v_ft_s = np.array(h['v'])
+    KE_ft_lbf = 0.5 * mass_slugs * v_ft_s**2
+
+    axs[3].plot(dist_ft, KE_ft_lbf, color='brown', linewidth=2, label='Kinetic Energy')
+    axs[3].set_xlabel('Distance [ft]')
+    axs[3].set_ylabel('KE [ft·lbf]')
+    axs[3].legend(loc='upper right')
+    axs[3].grid(True, alpha=0.3)
 
     plt.tight_layout()
     plt.show()
@@ -301,7 +314,7 @@ def plot_landing_analysis(h):
 if __name__ == "__main__":
     
     # Poids final après la descente (exemple)
-    W_landing_lb = 330.0 
+    W_landing_lb = fc_default['weight_landing_lb'] 
     
     # Calcule la V_TD à partir de ce poids
     Vs, V_td = v_touchdown(h_ft=0, dT_isa=0, weight=W_landing_lb, CL_max=CL_MAX_LANDING, sref=sref)
