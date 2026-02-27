@@ -41,7 +41,7 @@ def sumforce(mu, h_ft, dT_isa, V, weight, alpha, thrust_lbf, cg_mac_current):
     poussee = thrust_lbf
 
     # On récupère cltot ici
-    cltot, drag, qpsf = drag_total(h_ft, dT_isa,V/1.6878,weight,cg_mac_current,thrust_lbf,'take_off',alpha)
+    cltot, drag, qpsf, _ = drag_total(h_ft, dT_isa,V/1.6878,weight,cg_mac_current,thrust_lbf,'take_off',alpha)
     
     lift = cltot * qpsf * sref
     norme = weight - lift - np.sin(alpha_rad) * poussee

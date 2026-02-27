@@ -70,7 +70,7 @@ def sumforce_landing(
     V_kts = V_ft_s / 1.6878
 
     # 1. Calcul de la traînée (configuration 'landing' pour flaps à 30°)
-    cltot, drag, qpsf = drag_total(h_ft, dT_isa, V_kts, weight, cg_mac_current, weight, 'landing', alpha_deg) 
+    cltot, drag, qpsf, _ = drag_total(h_ft, dT_isa, V_kts, weight, cg_mac_current, weight, 'landing', alpha_deg) 
     
     # 2. Portance
     lift = cltot * qpsf * sref

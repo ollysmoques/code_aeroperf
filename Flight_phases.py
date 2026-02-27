@@ -13,6 +13,7 @@ from landing_phases import *
 from Mission_parameters import MISSION_HEIGHT_FT
 import pprint
 from dataclasses import asdict
+import os
 
 def save_run_parameters(filename, run_inputs, aircraft_data):
     """
@@ -68,7 +69,7 @@ mu          = aero.mu_TO
 sref        = geom.S_ref                
 CL_TO      = aero.cl_max_15
 
-VY = 75
+VY = 81
 h_cruise = MISSION_HEIGHT_FT
 dT_Isa = 0
 h_airport = 0
@@ -178,7 +179,7 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
     CAS_cruise_kts = V_cruise_CAS
     h_cruise_ft    = h_cruise
 
-    Range_NM, delta_t_min = compute_cruise_range_time(
+    Range_NM, delta_t_min, avg_cruise_power = compute_cruise_range_time(
         Weight_initial=weight, Weight_final=Weight_top_descent,
         CAS_kts=CAS_cruise_kts, h_ft=h_cruise_ft, dT_isa=dT_isa
     )
@@ -302,6 +303,22 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
         "times_min": t_dict,
         "ranges_NM": d_dict,
         "landing_history": history_roll, # Ajout de l'historique pour l'affichage externe
+        "speeds_kts": {
+            "takeoff_cas": CAS_kts_TO,
+            "cruise_cas": V_cruise_CAS,
+            "approach_cas": V_app_kts,
+            "approach_cas": V_app_kts,
+            "touchdown_cas": V_td_kts
+        },
+        "power_settings": {
+            "takeoff": 1.0,
+            "accel": 1.0,
+            "climb": 0.75,
+            "cruise": avg_cruise_power,
+            "descent": IDLE_POWER_SETTING,
+            "approach": IDLE_POWER_SETTING, # Approximated as Idle/Low for this graph
+            "groundroll": IDLE_POWER_SETTING
+        }
     }
 
     return results
@@ -323,6 +340,10 @@ try:
         "TO_weight_lb": TO_weight,
         "Weight_Reserve_lb": Weight_Reserve,
         "Calculated_Range_NM": res["ranges_NM"]["cruise"], # Ajout d'une sortie calculée
+        "V_Takeoff_CAS_kts": res["speeds_kts"]["takeoff_cas"],
+        "V_Cruise_CAS_kts": res["speeds_kts"]["cruise_cas"],
+        "V_Approach_CAS_kts": res["speeds_kts"]["approach_cas"],
+        "V_Touchdown_CAS_kts": res["speeds_kts"]["touchdown_cas"],
     }
 
     # Création du dictionnaire des objets avions (déjà définis globalement)
@@ -749,5 +770,61 @@ plt.xlabel("Poids [lbs]", fontsize=12)
 plt.ylabel("Position du CG (Fraction de MAC)", fontsize=12)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.legend(loc='upper right', fontsize=10)
+plt.tight_layout()
+plt.show()
+
+# =================================================================
+# 5. TRACÉ THRUST % VS FLIGHT PHASE
+# =================================================================
+
+# Récupération des données
+power_dict = res["power_settings"]
+
+# Construction des listes pour le plot (Step plot logic)
+thrust_percentages = [
+    power_dict["takeoff"] * 100,      # T0 -> T1
+    power_dict["accel"] * 100,        # T1 -> T2
+    power_dict["climb"] * 100,        # T2 -> T3
+    power_dict["cruise"] * 100,       # T3 -> T4
+    power_dict["descent"] * 100,      # T4 -> T5
+    power_dict["approach"] * 100,     # T5 -> T6
+    power_dict["groundroll"] * 100    # T6 -> T7
+]
+
+plt.figure(figsize=(10, 6))
+
+# On trace des segments horizontaux pour chaque phase
+for i in range(len(thrust_percentages)):
+    t_start = times_cumulative[i]
+    t_end = times_cumulative[i+1]
+    power = thrust_percentages[i]
+    
+    plt.plot([t_start, t_end], [power, power], color='#D35400', linewidth=3)
+    
+    # Lignes verticales pour relier les phases
+    if i < len(thrust_percentages) - 1:
+        next_power = thrust_percentages[i+1]
+        plt.plot([t_end, t_end], [power, next_power], color='#D35400', linewidth=1, linestyle='--')
+
+    # Annotation au milieu du segment
+    plt.text((t_start + t_end)/2, power + 2, f"{power:.1f}%", 
+             ha='center', va='bottom', fontsize=9, color='#333333')
+
+# Annotations des phases (Labels)
+phase_names = ["Takeoff", "Accel", "Climb", "Cruise", "Descent", "Approach", "Ground Roll"]
+for i, name in enumerate(phase_names):
+    t_mid = (times_cumulative[i] + times_cumulative[i+1]) / 2
+    plt.text(t_mid, thrust_percentages[i] - 5, name, 
+             ha='center', va='top', fontsize=9, color='gray', rotation=0)
+
+plt.title("Thrust Percentage vs Flight Phase", fontsize=14, fontweight='bold', pad=20)
+plt.xlabel("Flight Time [min]", fontsize=12)
+plt.ylabel("Thrust Setting (% of Max Thrust)", fontsize=12)
+
+# Ajustement des limites pour plus de lisibilité
+plt.ylim(0, 110)
+plt.xlim(left=0)
+plt.grid(True, linestyle='--', alpha=0.5)
+
 plt.tight_layout()
 plt.show()

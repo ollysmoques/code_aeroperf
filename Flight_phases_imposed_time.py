@@ -11,6 +11,8 @@ from cg_shift import *
 from landing_run import *  
 from landing_phases import * 
 from Mission_parameters import MISSION_HEIGHT_FT
+from Flight_phases import save_run_parameters
+import os
 
 
 def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight_initial):
@@ -298,7 +300,13 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
         "ranges_NM": d_dict,
         "landing_history": history_roll,
         "total_time_simulated": total_time_simulated,
-        "total_dist_simulated": total_dist_simulated
+        "total_dist_simulated": total_dist_simulated,
+        "speeds_kts": {
+            "takeoff_cas": CAS_kts_TO,
+            "cruise_cas": V_cruise_CAS,
+            "approach_cas": V_app_kts,
+            "touchdown_cas": V_td_kts
+        }
     }
     
     return results
@@ -347,6 +355,145 @@ def plot_mission_fuel_analysis(res):
     plt.savefig("fuel_distribution_pie.png")
     plt.close()
 
+def plot_fuel_efficiency(res):
+    """
+    Plots Fuel Flow (lb/hr) and Specific Range (NM/lb) for each phase.
+    """
+    w = res["weights_lb"]
+    t = res["times_min"]
+    d = res["ranges_NM"]
+    
+    # Phases to analyze
+    phases = ["takeoff", "accel", "climb", "cruise", "descent", "approach", "groundroll"]
+    phase_labels = ["Takeoff", "Accel", "Climb", "Cruise", "Descent", "Approach", "Roll"]
+    
+    fuel_flow = []
+    spec_range = []
+    
+    # Mapping weight keys to calculate delta fuel per phase
+    # Phases: TO, Accel, Climb, Cruise, Descent, App, Roll
+    # Weights keys: start, after_takeoff, after_accel, top_climb, top_descent, final_1000ft, touchdown, final
+    
+    w_keys_seq = ["start", "after_takeoff", "after_accel", "top_climb", "top_descent", "final_1000ft", "touchdown", "final"]
+    
+    for i, phase in enumerate(phases):
+        # Fuel consummed
+        w_start = w[w_keys_seq[i]]
+        w_end   = w[w_keys_seq[i+1]]
+        delta_fuel = w_start - w_end
+        
+        duration_min = t[phase]
+        dist_nm = d[phase]
+        
+        # Avoid division by zero
+        if duration_min > 0.01:
+            ff = delta_fuel / (duration_min / 60.0) # lb/hr
+        else:
+            ff = 0.0
+            
+        if delta_fuel > 0.01:
+            sr = dist_nm / delta_fuel # NM/lb
+        else:
+            sr = 0.0
+            
+        fuel_flow.append(ff)
+        spec_range.append(sr)
+        
+    # Plotting
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+    
+    # 1. Fuel Flow
+    ax1.bar(phase_labels, fuel_flow, color='orange', alpha=0.7, edgecolor='black')
+    ax1.set_ylabel("Fuel Flow [lb/hr]", fontweight='bold')
+    ax1.set_title("Average Fuel Flow per Phase", fontweight='bold')
+    ax1.grid(axis='y', linestyle='--', alpha=0.5)
+    
+    for i, v in enumerate(fuel_flow):
+        ax1.text(i, v + max(fuel_flow)*0.02, f"{v:.0f}", ha='center', va='bottom', fontsize=9)
+
+    # 2. Specific Range
+    ax2.bar(phase_labels, spec_range, color='green', alpha=0.7, edgecolor='black')
+    ax2.set_ylabel("Specific Range [NM/lb]", fontweight='bold')
+    ax2.set_title("Specific Range (Efficiency) per Phase", fontweight='bold')
+    ax2.grid(axis='y', linestyle='--', alpha=0.5)
+    
+    for i, v in enumerate(spec_range):
+        ax2.text(i, v + max(spec_range)*0.02, f"{v:.2f}", ha='center', va='bottom', fontsize=9)
+        
+    plt.xlabel("Flight Phase")
+    plt.tight_layout()
+    plt.savefig("fuel_efficiency_analysis.png")
+    plt.close()
+    print("Graph 'fuel_efficiency_analysis.png' generated.")
+
+def plot_mission_history(res):
+    """
+    Plots Weight history and CG shift history over time.
+    """
+    w = res["weights_lb"]
+    t = res["times_min"]
+    
+    # Reconstruct time and weight history
+    # Sequence matching FLIGHT_PHASES output structure
+    # t=0 -> start
+    # t=t_to -> after_takeoff
+    # ...
+    
+    phases = ["takeoff", "accel", "climb", "cruise", "descent", "approach", "groundroll"]
+    w_keys = ["start", "after_takeoff", "after_accel", "top_climb", "top_descent", "final_1000ft", "touchdown", "final"]
+    
+    times = [0.0]
+    weights = [w["start"]]
+    
+    current_time = 0.0
+    for i, phase in enumerate(phases):
+        dt = t[phase]
+        current_time += dt
+        times.append(current_time)
+        weights.append(w[w_keys[i+1]])
+        
+    # Calculate CG for each weight point
+    cg_pos = [compute_cg_mac(weight) for weight in weights]
+    
+    # Plotting
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+    
+    # 1. Weight History
+    ax1.plot(times, weights, 'b-o', linewidth=2)
+    ax1.set_ylabel("Aircraft Weight [lb]", fontweight='bold', color='blue')
+    ax1.set_title("Mission Weight History", fontweight='bold')
+    ax1.grid(True, linestyle=':', alpha=0.6)
+    
+    # Annotate start and end
+    ax1.text(times[0], weights[0], f"{weights[0]:.0f}", ha='left', va='bottom', color='blue')
+    ax1.text(times[-1], weights[-1], f"{weights[-1]:.0f}", ha='right', va='top', color='blue')
+
+    # 2. CG History
+    ax2.plot(times, cg_pos, 'r-o', linewidth=2)
+    ax2.set_ylabel("CG Position [% MAC]", fontweight='bold', color='red')
+    ax2.set_title("Center of Gravity Shift", fontweight='bold')
+    ax2.set_xlabel("Time [min]", fontweight='bold')
+    ax2.grid(True, linestyle=':', alpha=0.6)
+    
+    # Add Limits if available
+    try:
+        _, _, cg_fwd, cg_aft = get_cg_parameters()
+        ax2.axhline(cg_fwd, color='k', linestyle='--', label='Fwd Limit')
+        ax2.axhline(cg_aft, color='k', linestyle='--', label='Aft Limit')
+        ax2.legend()
+    except:
+        pass
+
+    for i, v in enumerate(cg_pos):
+        # Annotate simplified phases on CG plot
+        if i in [0, 3, 4, 7]: # Start, Top Climb, Top Descent, End
+             ax2.text(times[i], v, f"{v:.3f}", ha='center', va='bottom', fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig("mission_weight_cg_history.png")
+    plt.close()
+    print("Graph 'mission_weight_cg_history.png' generated.")
+
 # =================================================================
 # MAIN EXECUTION
 # =================================================================
@@ -362,7 +509,7 @@ if __name__ == "__main__":
     h_cruise = MISSION_HEIGHT_FT
     h_airport = 0
     V_cruise_CAS = 108
-    VY = 75
+    VY = 81
     TO_weight = aero.MAX_TO # On part à pleine charge
     
     # Quantité de fuel "Max" disponible (Fuel Load + Reserve)
@@ -386,11 +533,16 @@ if __name__ == "__main__":
     
     plt.figure(figsize=(10, 6))
 
+    res_std = None
+
     for dT_Isa, label, style, width in configs:
         print(f"\nRunning simulation for {label}...")
         # Exécution de la simulation
         res = FLIGHT_PHASES_TIME_IMPOSED(TIME_IMPOSED_MIN, h_cruise, h_airport, dT_Isa, VY, V_cruise_CAS, TO_weight)
         
+        if dT_Isa == 0:
+            res_std = res
+            
         t_dict = res["times_min"]
         
         # Construction des points temporels et d'altitude pour le plot
@@ -441,7 +593,12 @@ if __name__ == "__main__":
         print(f"  -> Temps total: {res['total_time_simulated']:.2f} min")
         print(f"  -> Fuel Restant: {fuel_remaining:.2f} lb")
 
-    plot_mission_fuel_analysis(res)
+    # Use Standard ISA results for detailed analysis if available, otherwise last run
+    res_analysis = res_std if res_std else res
+    
+    plot_mission_fuel_analysis(res_analysis)
+    plot_fuel_efficiency(res_analysis)
+    plot_mission_history(res_analysis)
     print("Graphs 'fuel_burn_per_phase.png' and 'fuel_distribution_pie.png' generated.")
 
     # Mise en forme du graphique
@@ -456,3 +613,35 @@ if __name__ == "__main__":
     plt.savefig("time_imposed_profile_sensitivity.png")
     print("\nGraph saved as 'time_imposed_profile_sensitivity.png'")
     plt.show()
+    
+    # SAUVEGARDE DES PARAMÈTRES
+    if res_std:
+        try:
+             # Création du dictionnaire des inputs de mission
+            mission_inputs = {
+                "h_cruise_ft": h_cruise,
+                "h_airport_ft": h_airport,
+                "dT_isa_C": 0, # Pour le cas standard
+                "VY_kts": VY,
+                "V_cruise_CAS_kts": V_cruise_CAS,
+                "TO_weight_lb": TO_weight,
+                "TIME_IMPOSED_MIN": TIME_IMPOSED_MIN,
+                "Calculated_Range_NM": res_std["ranges_NM"]["cruise"], 
+                "V_Takeoff_CAS_kts": res_std["speeds_kts"]["takeoff_cas"],
+                "V_Cruise_CAS_kts": res_std["speeds_kts"]["cruise_cas"],
+                "V_Approach_CAS_kts": res_std["speeds_kts"]["approach_cas"],
+                "V_Touchdown_CAS_kts": res_std["speeds_kts"]["touchdown_cas"],
+            }
+        
+            # Création du dictionnaire des objets avions
+            aircraft_objects = {
+                "fc": fc_default,
+                "geom": geom,
+                "aero": aero
+            }
+            
+            output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "simulation_parameters.txt")
+            save_run_parameters(output_path, mission_inputs, aircraft_objects)
+            
+        except Exception as e:
+            print(f"[WARNING] Could not save parameters report: {e}")

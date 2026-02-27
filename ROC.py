@@ -57,7 +57,7 @@ def ROC(CAS_kts,h_ft,dT_isa,weight,sref,power_setting, cg_mac_current, weight_lb
         AF = 0.7*Mach**2 * (phi - 0.190263*(Tstd/T))
         
     TAS_fps = TAS_kts*1.6878
-    cltot, drag, qpsf = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current, weight_lbf,'cruise')
+    cltot, drag, qpsf, _ = drag_total(h_ft, dT_isa, TAS_kts, weight_lbf, cg_mac_current, weight_lbf,'cruise')
     
     Thrust,Fuel_consumption = thrust_sw400pro_ft_lbf(h_ft,dT_isa,power_setting)
     
@@ -421,7 +421,7 @@ def acceleration(CAS_kts_initial, CAS_kts_final,
     delta_ISA = atm['delta_ISA']
 
     # Traînée et poussée (Thrust, drag en lbf, Fuel_consumption en fuel/h)
-    cltot, drag_lbf, qpsf = drag_total(h_ft, delta_ISA, TAS_kts_avg, weight_lbf, cg_mac_current, weight_lbf, 'cruise')
+    cltot, drag_lbf, qpsf, _ = drag_total(h_ft, delta_ISA, TAS_kts_avg, weight_lbf, cg_mac_current, weight_lbf, 'cruise')
     thrust_lbf, fuel_flow_per_min = thrust_sw400pro_ft_lbf(h_ft, delta_ISA, power_setting)
 
     # Accélération en ft/s^2
