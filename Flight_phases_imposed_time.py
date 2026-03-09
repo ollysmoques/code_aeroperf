@@ -79,7 +79,7 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
     h_start_climb = 5.0       
     h_end_climb   = h_cruise  
 
-    t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb = montee(
+    t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb, history_climb = montee(
         hpi=h_start_climb, hpf=h_end_climb, dT_isa=dT_isa, CAS_kts=CAS_climb_kts,
         weight_initial=weight, sref=sref, power_setting=0.75
     )
@@ -176,7 +176,7 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
         else:
             w_physics_descent = w_top_descent
             
-        t_descent, d_descent, fuel_desc, w_final_1000ft_val = descente(
+        t_descent, d_descent, fuel_desc, w_final_1000ft_val, history_descent = descente(
             hpi=h_cruise, hpf=h_descent_end, dT_isa=dT_isa, CAS_kts=VY,
             weight_initial=w_physics_descent, sref=sref, power_setting=IDLE_POWER_SETTING
         )
@@ -193,7 +193,7 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
             w_physics_approach = w_final_1000ft_val
             
         V_app_kts = VY 
-        t_app, d_app, fuel_app, w_td_val, V_td_kts = approach_and_flare(
+        t_app, d_app, fuel_app, w_td_val, V_td_kts, history_approach = approach_and_flare(
             hpi=h_descent_end, hpf=h_airport, h_flare=h_flare_start, dT_isa=dT_isa,
             V_app_kts=V_app_kts, weight_initial=w_physics_approach, sref=sref, 
             power_setting=IDLE_POWER_SETTING, gamma_deg=gamma_approach_deg
@@ -299,6 +299,9 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
         "times_min": t_dict,
         "ranges_NM": d_dict,
         "landing_history": history_roll,
+        "climb_history": history_climb if 'history_climb' in locals() else None,
+        "descent_history": history_descent if 'history_descent' in locals() else None,
+        "approach_history": history_approach if 'history_approach' in locals() else None,
         "total_time_simulated": total_time_simulated,
         "total_dist_simulated": total_dist_simulated,
         "speeds_kts": {

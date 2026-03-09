@@ -64,6 +64,10 @@ def approach_and_flare(hpi, hpf, h_flare, dT_isa, V_app_kts, weight_initial, sre
     # L'avion maintient une pente et une vitesse constantes.
     # ==========================================================
     
+    # History for approach/stabilized glide
+    history_approach = {'altitude_ft': [], 'cas_kts': [], 'stall_margin_pct': [], 'stall_warning': []}
+    warned = False
+
     while hp1 > h_flare:
         # Détermination du prochain point
         hp2 = max(h_flare, hp1 - dh)
@@ -72,6 +76,24 @@ def approach_and_flare(hpi, hpf, h_flare, dT_isa, V_app_kts, weight_initial, sre
         atm = atmosphere(hp_moy, dT_isa, mode='delta_isa')
         vitesse = vitesses(atm, V_app_kts, 'calibree', weight, sref)
         TAS_kts = vitesse['vitesses avion kts']['vitesse vraie']
+        # Compute stall margin based on current weight and local density
+        rho = atm['densite']
+        try:
+            Vs_ft_s = np.sqrt(2*weight/(rho*sref*CL_MAX_LANDING))
+            Vs_kts = Vs_ft_s/1.6878
+            margin = (V_app_kts - Vs_kts)/Vs_kts*100.0
+        except Exception:
+            margin = 999.0
+
+        is_warning = margin < 15.0
+        history_approach['altitude_ft'].append(hp_moy)
+        history_approach['cas_kts'].append(V_app_kts)
+        history_approach['stall_margin_pct'].append(margin)
+        history_approach['stall_warning'].append(is_warning)
+
+        if is_warning and not warned:
+            print(f"[APPROACH WARNING] CAS {V_app_kts:.1f} kts near Vs (margin={margin:.1f}%).")
+            warned = True
         
         T = atm['temperature_K']
         Tstd = T - atm['delta_ISA']
@@ -137,5 +159,20 @@ def approach_and_flare(hpi, hpf, h_flare, dT_isa, V_app_kts, weight_initial, sre
     
     # NOTE: Le poids 'weight' est maintenant le poids au toucher (W_td)
 
-    return temps, distance, Fuel_tot, weight, V_td_kts
+    # Add final touchdown point to history (flare end)
+    try:
+        atm_td = atmosphere(0.0, dT_isa, mode='delta_isa')
+        rho_td = atm_td['densite']
+        Vs_td_ft_s = np.sqrt(2*weight/(rho_td*sref*CL_MAX_LANDING))
+        Vs_td_kts = Vs_td_ft_s/1.6878
+        margin_td = (V_td_kts - Vs_td_kts)/Vs_td_kts*100.0
+    except Exception:
+        margin_td = 999.0
+
+    history_approach['altitude_ft'].append(0.0)
+    history_approach['cas_kts'].append(V_td_kts)
+    history_approach['stall_margin_pct'].append(margin_td)
+    history_approach['stall_warning'].append(margin_td < 15.0)
+
+    return temps, distance, Fuel_tot, weight, V_td_kts, history_approach
 

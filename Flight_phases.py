@@ -153,7 +153,7 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
     h_start_climb = 5.0       # Début de montée après accélération
     h_end_climb   = h_cruise  
 
-    t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb = montee(
+    t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb, history_climb = montee(
         hpi=h_start_climb, hpf=h_end_climb, dT_isa=dT_isa, CAS_kts=CAS_climb_kts,
         weight_initial=weight, sref=sref, power_setting=0.75
     )
@@ -196,7 +196,7 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
     # ==========================
     h_descent_end = 1000.0
     
-    t_descent_min, d_descent_NM, Fuel_desc, weight_final_descent = descente(
+    t_descent_min, d_descent_NM, Fuel_desc, weight_final_descent, history_descent = descente(
         hpi=h_cruise, hpf=h_descent_end, dT_isa=dT_isa, CAS_kts=VY,
         weight_initial=weight, sref=sref, power_setting=IDLE_POWER_SETTING
     )
@@ -218,7 +218,7 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
     #V_app_kts = aero.V_ref_kts # Assumé que V_ref est défini/importé, sinon utiliser V_cruise_CAS * 1.05
     V_app_kts = VY # Réutilisation de VY si V_ref non défini
 
-    t_approach_min, d_approach_nm, fuel_approach_lb, w_td, V_td_kts = approach_and_flare(
+    t_approach_min, d_approach_nm, fuel_approach_lb, w_td, V_td_kts, history_approach = approach_and_flare(
         hpi=h_descent_end, hpf=h_airport, h_flare=h_flare_start, dT_isa=dT_isa,
         V_app_kts=V_app_kts, weight_initial=weight, sref=sref, 
         power_setting=IDLE_POWER_SETTING, gamma_deg=gamma_approach_deg
@@ -303,10 +303,12 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
         "times_min": t_dict,
         "ranges_NM": d_dict,
         "landing_history": history_roll, # Ajout de l'historique pour l'affichage externe
+        "climb_history": history_climb,
+        "descent_history": history_descent,
+        "approach_history": history_approach,
         "speeds_kts": {
             "takeoff_cas": CAS_kts_TO,
             "cruise_cas": V_cruise_CAS,
-            "approach_cas": V_app_kts,
             "approach_cas": V_app_kts,
             "touchdown_cas": V_td_kts
         },
@@ -362,6 +364,75 @@ except Exception as e:
 if "landing_history" in res:
    plot_landing_analysis(res["landing_history"])
 
+
+
+# NEW: Plot consolidated stall warnings across all flight phases
+def plot_stall_warnings_all_phases(res):
+    """
+    Plots stall margin data from all flight phases (climb, descent, landing).
+    """
+    fig, ax = plt.subplots(figsize=(14, 6))
+    
+    # Collect all stall warning data
+    all_altitudes = []
+    all_margins = []
+    all_warnings = []
+    all_phases_labels = []
+    
+    # Add climb phase
+    if "climb_history" in res:
+        hist = res["climb_history"]
+        all_altitudes.extend(hist['altitude'])
+        all_margins.extend(hist['stall_margin_pct'])
+        all_warnings.extend(hist['stall_warning'])
+        all_phases_labels.extend(['Climb'] * len(hist['altitude']))
+    
+    # Add descent phase
+    if "descent_history" in res:
+        hist = res["descent_history"]
+        all_altitudes.extend(hist['altitude'])
+        all_margins.extend(hist['stall_margin_pct'])
+        all_warnings.extend(hist['stall_warning'])
+        all_phases_labels.extend(['Descent'] * len(hist['altitude']))
+    
+    # Add landing phase
+    if "landing_history" in res:
+        hist = res["landing_history"]
+        if 'stall_margin_pct' in hist:
+            all_altitudes.extend([0] * len(hist['stall_margin_pct']))  # Landing at ground level
+            all_margins.extend(hist['stall_margin_pct'])
+            all_warnings.extend(hist['stall_warning'])
+            all_phases_labels.extend(['Landing'] * len(hist['stall_margin_pct']))
+    
+    if not all_altitudes:
+        print("No stall warning data available for plotting")
+        return
+    
+    # Convert to arrays
+    all_altitudes = np.array(all_altitudes)
+    all_margins = np.array(all_margins)
+    all_warnings = np.array(all_warnings)
+    
+    # Plot stall margin vs altitude
+    ax.scatter(all_altitudes, all_margins, c=all_warnings, cmap='RdYlGn_r', s=50, alpha=0.6)
+    ax.plot(all_altitudes, all_margins, 'k--', alpha=0.3, linewidth=1)
+    
+    # Add threshold lines
+    ax.axhline(15.0, color='orange', linestyle='--', linewidth=2, label='Stall Warning Threshold (15%)')
+    ax.axhline(0.0, color='red', linestyle='-', linewidth=2, alpha=0.7, label='Stall Speed (0% margin)')
+    ax.fill_between(ax.get_xlim(), 0, 15, color='red', alpha=0.1, label='Warning Zone')
+    
+    ax.set_xlabel('Altitude [ft]', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Stall Margin [%]', fontsize=12, fontweight='bold')
+    ax.set_title('Stall Warning Monitor - All Flight Phases', fontsize=14, fontweight='bold')
+    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.legend(fontsize=10, loc='best')
+    
+    plt.tight_layout()
+    plt.show()
+
+# Call stall warning plot if data available
+plot_stall_warnings_all_phases(res)
 
 
 # ---------------------------------------------------------

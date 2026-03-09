@@ -67,6 +67,10 @@ def groundrun(v_trans, weight_initial, alpha_trans, alpha_ini, h_ft, dT_isa, pow
         'thrust': [], 'norme': [], 'cl': [] , 'weight':[]
     }
 
+    # Add stall tracking
+    history['stall_margin_pct'] = []
+    history['stall_warning'] = []
+
     v = 1
     distance = 0
     t = 0
@@ -78,6 +82,10 @@ def groundrun(v_trans, weight_initial, alpha_trans, alpha_ini, h_ft, dT_isa, pow
     
     v_r, v_lof = v_lof_v_r(h_ft, dT_isa, weight_initial, CL_max, sref)
     
+    # Precompute static atmosphere for runway altitude
+    atm_run = atmosphere(h_ft, dT_isa, mode='delta_isa')
+    rho_run = atm_run['densite']
+
     def record_step(v, dist, a, lift, drag, fric, thrust, norm, cl, sref ,weight):
         history['v'].append(v)
         history['dist'].append(dist)
@@ -89,6 +97,17 @@ def groundrun(v_trans, weight_initial, alpha_trans, alpha_ini, h_ft, dT_isa, pow
         history['norme'].append(norm)
         history['cl'].append(cl)
         history['weight'].append(weight)
+        # Stall margin based on instantaneous weight and static runway density
+        try:
+            Vs_ft_s = np.sqrt(2*weight/(rho_run*sref*CL_max))
+            margin = (v - Vs_ft_s)/Vs_ft_s*100.0
+        except Exception:
+            Vs_ft_s = 0.0
+            margin = 999.0
+
+        is_warning = margin < 15.0
+        history['stall_margin_pct'].append(margin)
+        history['stall_warning'].append(is_warning)
         
     weight = weight_initial
 

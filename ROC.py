@@ -187,61 +187,80 @@ def montee(hpi,hpf,dT_isa,CAS_kts,weight_initial,sref,power_setting):
     dh = 5
     hp1 = hpi
     weight = weight_initial
-    temps = 0
-    distance = 0
-    Fuel_tot = 0
+    temps = 0.0
+    distance = 0.0
+    Fuel_tot = 0.0
+    # NEW: Stall warning tracking for climb phase
+    history_climb = {
+        'altitude': [], 'cas_kts': [], 'stall_margin_pct': [], 'stall_warning': []
+    }
+
+    stall_warnings_printed = False
+    CL_MAX_CLIMB = aero.cl_max_15  # Use max CL for climb reference
+
     while hp1 < hpf:
+        # determine next step
         if hp1 + dh > hpf:
             hp2 = hpf
-            
-        else :
+        else:
             hp2 = hp1 + dh
-        
-        
-        hp_moy = (hp1+hp2)/2
-        atm = atmosphere(hp_moy,dT_isa,mode='delta_isa')
-        vitesse = vitesses(atm,CAS_kts,'calibree',weight,sref)
+
+        hp_moy = 0.5 * (hp1 + hp2)
+        atm = atmosphere(hp_moy, dT_isa, mode='delta_isa')
+
+        # Speeds
+        vitesse = vitesses(atm, CAS_kts, 'calibree', weight, sref)
         TAS_kts = vitesse['vitesses avion kts']['vitesse vraie']
-        
+        TAS_fps = TAS_kts * 1.6878
+
         T = atm['temperature_K']
-        dT_isa = atm['delta_ISA']
-        Tstd = T- dT_isa
-        
+        dT_isa_loc = atm['delta_ISA']
+        Tstd = T - dT_isa_loc
+
         cg_mac_current = compute_cg_mac(weight)
-        
+
         dhp = 5
-        dh_geo = dhp*T/Tstd
-        
-        ROC_geo_fpm = ROC(CAS_kts,hp_moy,dT_isa,weight,sref,power_setting, cg_mac_current, weight)
-        
+        dh_geo = dhp * T / Tstd
+
+        ROC_geo_fpm = ROC(CAS_kts, hp_moy, dT_isa_loc, weight, sref, power_setting, cg_mac_current, weight)
+
+        # NEW: Calculate stall speed (Vs = sqrt(2*W / (rho * S * CL_max)))
+        rho = atm['densite']
+        Vs_fps = np.sqrt(2 * weight / (rho * sref * CL_MAX_CLIMB))
+        Vs_kts = Vs_fps / 1.6878
+        stall_margin = ((CAS_kts - Vs_kts) / Vs_kts) * 100.0
+        is_stall_warning = stall_margin < 15.0
+
+        # Print warning if approaching stall in climb
+        if is_stall_warning and not stall_warnings_printed:
+            print(f"⚠️  STALL WARNING (Climb): CAS {CAS_kts:.1f} kts approaching Vs {Vs_kts:.1f} kts (Margin: {stall_margin:.1f}%)")
+            stall_warnings_printed = True
+        elif stall_margin > 20.0:
+            stall_warnings_printed = False
+
+        history_climb['altitude'].append(hp_moy)
+        history_climb['cas_kts'].append(CAS_kts)
+        history_climb['stall_margin_pct'].append(stall_margin)
+        history_climb['stall_warning'].append(is_stall_warning)
+
         if ROC_geo_fpm < 300:
             print(f" ROC trop faible ({ROC_geo_fpm:.0f} ft/min) à {hp_moy:.0f} ft — montée impossible.")
             break
-            
-        thrust, Fuel_consumption = thrust_sw400pro_ft_lbf(hp_moy, dT_isa, power_setting)
-        delta_t = (dh_geo/ROC_geo_fpm)
+
+        thrust, Fuel_consumption = thrust_sw400pro_ft_lbf(hp_moy, dT_isa_loc, power_setting)
+        delta_t = (dh_geo / ROC_geo_fpm)
         temps += delta_t
-        delta_distance = TAS_kts*delta_t/60
+        delta_distance = TAS_kts * delta_t / 60.0
         distance += delta_distance
-        delta_fuel = Fuel_consumption*delta_t
+        delta_fuel = Fuel_consumption * delta_t
         weight -= delta_fuel
         Fuel_tot += delta_fuel
         hp1 = hp2
-        
+
         if hp1 >= hpf:
             break
-        
-    return temps,distance,Fuel_tot,weight
 
-
-
-temps,distance,Fuel_tot,weight = montee(50,MISSION_HEIGHT_FT,0,73,375,sref,0.75)
-
-print('=========Valeurs montée===========')
-print('Temps:',temps)
-print('Distance:', distance)
-print('Carburant_Consommé:',Fuel_tot)
-print('Poids final:',weight)
+    return temps, distance, Fuel_tot, weight, history_climb
 
 
 
@@ -252,6 +271,14 @@ def descente(hpi, hpf, dT_isa, CAS_kts, weight_initial, sref, power_setting):
     temps = 0.0       # [min]
     distance = 0.0    # [NM]
     Fuel_tot = 0.0    # [lb]
+    
+    # NEW: Stall warning tracking for descent phase
+    history_descent = {
+        'altitude': [], 'cas_kts': [], 'stall_margin_pct': [], 'stall_warning': []
+    }
+    
+    stall_warnings_printed = False
+    CL_MAX_DESCENT = aero.cl_max_15  # Use max CL for descent reference
 
     while hp1 > hpf:
         # Choix du point suivant
@@ -282,6 +309,25 @@ def descente(hpi, hpf, dT_isa, CAS_kts, weight_initial, sref, power_setting):
         
         # Rate of climb "géométrique" (sera négatif si Thrust < Drag)
         ROC_geo_fpm = ROC(CAS_kts, hp_moy, dT_isa_loc, weight, sref, power_setting, cg_mac_current, weight)
+        
+        # NEW: Calculate stall speed
+        rho = atm['densite']
+        Vs_fps = np.sqrt(2 * weight / (rho * sref * CL_MAX_DESCENT))
+        Vs_kts = Vs_fps / 1.6878
+        stall_margin = ((CAS_kts - Vs_kts) / Vs_kts) * 100.0
+        is_stall_warning = stall_margin < 15.0
+        
+        # Print warning if approaching stall in descent
+        if is_stall_warning and not stall_warnings_printed:
+            print(f"⚠️  STALL WARNING (Descent): CAS {CAS_kts:.1f} kts approaching Vs {Vs_kts:.1f} kts (Margin: {stall_margin:.1f}%)")
+            stall_warnings_printed = True
+        elif stall_margin > 20.0:
+            stall_warnings_printed = False
+        
+        history_descent['altitude'].append(hp_moy)
+        history_descent['cas_kts'].append(CAS_kts)
+        history_descent['stall_margin_pct'].append(stall_margin)
+        history_descent['stall_warning'].append(is_stall_warning)
 
         # Sécurité : éviter division par ~0 ou ROC dans le mauvais sens
         if ROC_geo_fpm >= -1e-3:
@@ -305,7 +351,7 @@ def descente(hpi, hpf, dT_isa, CAS_kts, weight_initial, sref, power_setting):
         # Mise à jour altitude pour le prochain pas
         hp1 = hp2
 
-    return temps, distance, Fuel_tot, weight
+    return temps, distance, Fuel_tot, weight, history_descent
     
     
 
@@ -370,7 +416,7 @@ def find_initial_weight_for_descent(hpi, hpf, dT_isa, CAS_kts,
 
     for it in range(max_iter):
         # Appel à ta fonction descente avec ce poids initial
-        temps, distance, Fuel_tot, weight_final = descente(
+        temps, distance, Fuel_tot, weight_final, _ = descente(
             hpi, hpf, dT_isa, CAS_kts, weight_initial_guess, sref, power_setting
         )
 

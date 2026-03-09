@@ -139,7 +139,8 @@ def landing_groundroll(
     history = {
         'v': [], 'dist': [], 'a': [], 
         'lift': [], 'drag': [], 'friction': [], 
-        'thrust': [], 'norme': [], 'cl': [], 'weight': []
+        'thrust': [], 'norme': [], 'cl': [], 'weight': [],
+        'stall_margin_pct': [], 'stall_warning': []  # NEW: Stall warning tracking
     }
 
     v = V_td_ft_s
@@ -164,7 +165,7 @@ def landing_groundroll(
     V_tail_down = Vs_ft_s * V_TAIL_DOWN_FACTOR # Ex: 1.05 * Vs
 
     
-    def record_step(v, dist, a, lift, drag, fric, thrust, norm, cl, weight):
+    def record_step(v, dist, a, lift, drag, fric, thrust, norm, cl, weight, stall_margin_pct=0.0, is_stall_warning=False):
         history['v'].append(v)
         history['dist'].append(dist)
         history['a'].append(a)
@@ -175,6 +176,8 @@ def landing_groundroll(
         history['norme'].append(norm)
         history['cl'].append(cl)
         history['weight'].append(weight)
+        history['stall_margin_pct'].append(stall_margin_pct)
+        history['stall_warning'].append(is_stall_warning)
 
     # =======================================================
     # PHASE 1: Roulement à haute vitesse (AoA = ALPHA_TOUCHDOWN)
@@ -182,6 +185,7 @@ def landing_groundroll(
     # Le freinage est moins efficace car la force normale (Norme) est faible.
     # =======================================================
     alpha_current = alpha_td_deg
+    stall_warning_printed_phase1 = False  # Flag to avoid repeated warnings
     
     while v > V_tail_down:
         
@@ -202,7 +206,17 @@ def landing_groundroll(
              print(f"⚠ Arrêt de la simulation (Phase 1) : a >= 0 à {v/1.6878:.1f} kts.")
              break
 
-        record_step(v, distance, a, lift, drag, fric, thrust, norm, cl, weight)
+        # NEW: Calculate current stall speed and margin
+        Vs_current, _ = v_touchdown(h_ft, dT_isa, weight, CL_MAX_LANDING, sref)
+        stall_margin = ((v - Vs_current) / Vs_current) * 100.0  # Margin in percentage above Vs
+        is_stall_warning = stall_margin < 15.0  # Warning if within 15% of Vs
+        
+        # Print warning if approaching stall
+        if is_stall_warning and not stall_warning_printed_phase1:
+            print(f"⚠️  STALL WARNING (Phase 1): Velocity {v/1.6878:.1f} kts approaching Vs {Vs_current/1.6878:.1f} kts (Margin: {stall_margin:.1f}%)")
+            stall_warning_printed_phase1 = True
+        
+        record_step(v, distance, a, lift, drag, fric, thrust, norm, cl, weight, stall_margin, is_stall_warning)
 
         # Intégration temporelle
         t += dt
@@ -212,12 +226,18 @@ def landing_groundroll(
         
         # Consommation de carburant
         weight -= fuel_consumption_per_min / 60.0 * dt
+        
+        # Reset warning flag if we gain margin
+        if stall_margin > 20.0:
+            stall_warning_printed_phase1 = False
 
     # =======================================================
     # PHASE 2: Queue au sol (AoA = ALPHA_STATIC_DEG)
     # L'AoA est réduit, la Portance chute, la Force Normale et le Freinage augmentent.
     # Cette phase assure l'arrêt complet.
     # =======================================================
+    stall_warning_printed_phase2 = False  # Flag to avoid repeated warnings
+    
     while v > 0.1:
         
         cg_mac_current = compute_cg_mac(weight)
@@ -237,7 +257,17 @@ def landing_groundroll(
              print(f"⚠ Arrêt de la simulation (Phase 2) : a >= 0 à {v/1.6878:.1f} kts.")
              break
 
-        record_step(v, distance, a, lift, drag, fric, thrust, norm, cl, weight)
+        # NEW: Calculate current stall speed and margin
+        Vs_current, _ = v_touchdown(h_ft, dT_isa, weight, CL_MAX_LANDING, sref)
+        stall_margin = ((v - Vs_current) / Vs_current) * 100.0  # Margin in percentage above Vs
+        is_stall_warning = stall_margin < 15.0  # Warning if within 15% of Vs
+        
+        # Print warning if approaching stall
+        if is_stall_warning and not stall_warning_printed_phase2:
+            print(f"⚠️  STALL WARNING (Phase 2): Velocity {v/1.6878:.1f} kts approaching Vs {Vs_current/1.6878:.1f} kts (Margin: {stall_margin:.1f}%)")
+            stall_warning_printed_phase2 = True
+        
+        record_step(v, distance, a, lift, drag, fric, thrust, norm, cl, weight, stall_margin, is_stall_warning)
 
         # Intégration temporelle
         t += dt
@@ -248,8 +278,15 @@ def landing_groundroll(
         # Consommation de carburant
         weight -= fuel_consumption_per_min / 60.0 * dt
         
+        # Reset warning flag if we gain margin
+        if stall_margin > 20.0:
+            stall_warning_printed_phase2 = False
+        
     # Final step at V=0
-    record_step(0.0, distance, 0.0, lift, drag, fric, thrust, norm, cl, weight)
+    # Calculate final stall margin for last point
+    Vs_final, _ = v_touchdown(h_ft, dT_isa, weight, CL_MAX_LANDING, sref)
+    stall_margin_final = ((0.0 - Vs_final) / Vs_final) * 100.0
+    record_step(0.0, distance, 0.0, lift, drag, fric, thrust, norm, cl, weight, stall_margin_final, False)
 
     return distance, t, history
 
@@ -258,9 +295,9 @@ def plot_landing_analysis(h):
     """
     Génère les graphiques d'analyse pour le roulement à l'atterrissage.
     h: dictionnaire 'history' retourné par landing_groundroll containing lists of v, dist, etc.
-    Ajoute un 4ème subplot pour l'énergie cinétique (KE) le long de la distance.
+    Ajoute un 4ème subplot pour l'énergie cinétique (KE) et un 5ème pour le stall margin.
     """
-    fig, axs = plt.subplots(4, 1, figsize=(10, 14), sharex=True)
+    fig, axs = plt.subplots(5, 1, figsize=(10, 16), sharex=True)
 
     v_kts = np.array(h['v']) / 1.6878
     dist_ft = np.array(h['dist'])
@@ -299,10 +336,42 @@ def plot_landing_analysis(h):
     KE_ft_lbf = 0.5 * mass_slugs * v_ft_s**2
 
     axs[3].plot(dist_ft, KE_ft_lbf, color='brown', linewidth=2, label='Kinetic Energy')
-    axs[3].set_xlabel('Distance [ft]')
     axs[3].set_ylabel('KE [ft·lbf]')
     axs[3].legend(loc='upper right')
     axs[3].grid(True, alpha=0.3)
+
+    # Graphique 5 : Stall Margin (NEW)
+    stall_margin = np.array(h['stall_margin_pct'])
+    stall_warnings = np.array(h['stall_warning'])
+    
+    axs[4].plot(dist_ft, stall_margin, color='darkred', linewidth=2.5, label='Stall Margin')
+    
+    # Mark warning zones in red
+    warning_zones = np.where(stall_warnings)[0]
+    if len(warning_zones) > 0:
+        for idx in warning_zones:
+            axs[4].plot(dist_ft[idx], stall_margin[idx], 'r.', markersize=8)  # Red dots for warnings
+    
+    # Add threshold line and warning zone
+    axs[4].axhline(15.0, color='orange', linestyle='--', linewidth=2, label='Stall Warning Threshold (15%)')
+    axs[4].axhline(0.0, color='red', linestyle='-', linewidth=2, alpha=0.7, label='Stall Speed (0% margin)')
+    axs[4].fill_between(dist_ft, 0, 15, color='red', alpha=0.1, label='Warning Zone')
+    
+    axs[4].set_xlabel('Distance [ft]')
+    axs[4].set_ylabel('Stall Margin [%]')
+    axs[4].set_title('Stall Warning Monitor')
+    axs[4].legend(loc='upper right')
+    axs[4].grid(True, alpha=0.3)
+    
+    # Add summary statistics
+    min_margin = np.min(stall_margin)
+    min_margin_idx = np.argmin(stall_margin)
+    stall_margin_dist = dist_ft[min_margin_idx]
+    
+    textstr = f'Min Margin: {min_margin:.1f}% @ {stall_margin_dist:.0f} ft'
+    axs[4].text(0.98, 0.95, textstr, transform=axs[4].transAxes, 
+                fontsize=10, verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     plt.tight_layout()
     plt.show()
@@ -313,8 +382,9 @@ def plot_landing_analysis(h):
 
 if __name__ == "__main__":
     
-    # Poids final après la descente (exemple)
-    W_landing_lb = fc_default['weight_landing_lb'] 
+    # Poids final après la descente (exemple) - utiliser le poids de réserve
+    fc_default, geom, aero = get_default_inputs()
+    W_landing_lb = aero.OEW + aero.PAYLOAD  # Poids sans carburant de réserve
     
     # Calcule la V_TD à partir de ce poids
     Vs, V_td = v_touchdown(h_ft=0, dT_isa=0, weight=W_landing_lb, CL_max=CL_MAX_LANDING, sref=sref)
