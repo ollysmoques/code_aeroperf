@@ -497,6 +497,59 @@ def plot_mission_history(res):
     plt.close()
     print("Graph 'mission_weight_cg_history.png' generated.")
 
+
+def plot_stall_warnings(res):
+    """
+    Plots stall margin vs altitude for climb, descent and approach.
+    Highlights points where a stall warning was triggered.
+    """
+    histories = {
+        'Climb': res.get('climb_history'),
+        'Descent': res.get('descent_history'),
+        'Approach': res.get('approach_history')
+    }
+
+    plt.figure(figsize=(8, 6))
+    colors = {'Climb': 'blue', 'Descent': 'orange', 'Approach': 'green'}
+    any_warning = False
+
+    for phase, hist in histories.items():
+        if not hist:
+            continue
+
+        alt = np.array(hist.get('altitude', []))
+        margin = np.array(hist.get('stall_margin_pct', []))
+        warn = np.array(hist.get('stall_warning', []), dtype=bool)
+
+        if alt.size == 0:
+            continue
+
+        # Scatter all points for the phase
+        plt.scatter(margin, alt, label=phase, color=colors.get(phase, 'gray'), alpha=0.6)
+
+        # Overlay stall-warning points
+        if warn.any():
+            any_warning = True
+            plt.scatter(margin[warn], alt[warn], facecolors='none', edgecolors='r',
+                        s=80, linewidths=1.5, marker='X', label=f"{phase} - Stall Risk")
+
+    # Visual threshold line (15% margin)
+    plt.axvline(15.0, color='k', linestyle='--', linewidth=0.8, label='Warning threshold (15%)')
+    plt.gca().invert_yaxis()
+    plt.xlabel('Stall Margin [%]')
+    plt.ylabel('Altitude [ft]')
+    plt.title('Stall Margin by Phase — markers show stall-risk points')
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.legend(loc='best')
+    plt.tight_layout()
+    plt.savefig('stall_warnings_by_phase.png')
+    plt.close()
+
+    if any_warning:
+        print("[WARNING] One or more flight phases show stall-risk points. See 'stall_warnings_by_phase.png'.")
+    else:
+        print("No stall-risk points detected (stall margin > 15% everywhere). Figure saved as 'stall_warnings_by_phase.png'.")
+
 # =================================================================
 # MAIN EXECUTION
 # =================================================================
@@ -602,6 +655,7 @@ if __name__ == "__main__":
     plot_mission_fuel_analysis(res_analysis)
     plot_fuel_efficiency(res_analysis)
     plot_mission_history(res_analysis)
+    plot_stall_warnings(res_analysis)
     print("Graphs 'fuel_burn_per_phase.png' and 'fuel_distribution_pie.png' generated.")
 
     # Mise en forme du graphique
