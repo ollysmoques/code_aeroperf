@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from dataclasses import dataclass
+from typing import Optional
 
 # ==============================
 #  Form factors pour éléments d'aile
@@ -124,8 +125,8 @@ def ff_engine_nacelle(f: float) -> float:
 class InterferenceFactor:
     name: str
     IF_nominal: float
-    IF_min: float | None = None
-    IF_max: float | None = None
+    IF_min: Optional[float] = None
+    IF_max: Optional[float] = None
 
 
 INTERFERENCE_FACTOR_TABLE: dict[str, InterferenceFactor] = {
@@ -236,15 +237,15 @@ class FormFactorInputs:
     method: str           # 'hoerner30', 'hoerner4050', 'torenbeek',
                           # 'jenkinson_wing', 'jenkinson_tail'
     t_over_c: float
-    sweep_c2_deg: float | None = None
+    sweep_c2_deg: Optional[float] = None
 
 
 @dataclass
 class FuselageFFInputs:
     method: str          # 'hoerner', 'torenbeek', 'nicolai', 'shevell', 'jenkinson'
-    L: float | None = None
-    A_max: float | None = None
-    f: float | None = None       # fineness ratio si déjà connu
+    L: Optional[float] = None
+    A_max: Optional[float] = None
+    f: Optional[float] = None       # fineness ratio si déjà connu
 
 
 def compute_form_factor(inputs: FormFactorInputs) -> float:

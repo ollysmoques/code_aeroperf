@@ -1,5 +1,6 @@
 import math
 from dataclasses import dataclass
+from typing import Optional
 
 # ============================================================
 # 1) Viscosité (loi de Sutherland)
@@ -171,7 +172,7 @@ class FuselageFrictionResult:
 # 7) Helper générique : choix du C_f en fonction du modèle
 # ============================================================
 
-def _cf_surface(model_local: str, Re: float, xtr: float | None) -> float:
+def _cf_surface(model_local: str, Re: float, xtr: Optional[float]) -> float:
     m = model_local.lower()
     if m == "laminar":
         return cf_laminar_avg(Re)
@@ -202,11 +203,11 @@ def compute_lifting_surface_skin_friction(
     regime: str = "subsonic",
     units: str = "imperial",
     model: str = "mixed",
-    xtr_root_upper: float | None = None,
-    xtr_root_lower: float | None = None,
-    xtr_tip_upper: float | None = None,
-    xtr_tip_lower: float | None = None,
-    mu_override: float | None = None,
+    xtr_root_upper: Optional[float] = None,
+    xtr_root_lower: Optional[float] = None,
+    xtr_tip_upper: Optional[float] = None,
+    xtr_tip_lower: Optional[float] = None,
+    mu_override: Optional[float] = None,
 ) -> WingFrictionResult:
     """
     Boîte noire générique pour une surface portante (aile, HT, VT).
@@ -302,9 +303,9 @@ def compute_body_skin_friction(
     regime: str = "subsonic",
     units: str = "imperial",
     model: str = "turbulent",
-    xtr_upper: float | None = None,
-    xtr_lower: float | None = None,
-    mu_override: float | None = None,
+    xtr_upper: Optional[float] = None,
+    xtr_lower: Optional[float] = None,
+    mu_override: Optional[float] = None,
 ) -> FuselageFrictionResult:
     """
     Boîte noire générique pour un corps de révolution (fuselage, nacelle, etc.).

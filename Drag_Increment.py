@@ -6,6 +6,7 @@ Created on Tue Nov 25 13:46:50 2025
 """
 
 from dataclasses import dataclass
+from typing import Optional
 
 from Aircraft_data import (
     FlightConditions,
@@ -69,12 +70,12 @@ class GearDragResult:
 # ============================================================
 
 def compute_main_gear_drag_increment(
-    fc: FlightConditions | None = None,
-    geom: AircraftGeometry | None = None,
-    aero: AeroParams | None = None,     # pas utilisé ici mais gardé pour homogénéité
+    fc: Optional[FlightConditions] = None,
+    geom: Optional[AircraftGeometry] = None,
+    aero: Optional[AeroParams] = None,     # pas utilisé ici mais gardé pour homogénéité
     *,
-    config_key: str | None = None,
-    delta_CDs_manual: float | None = None,
+    config_key: Optional[str] = None,
+    delta_CDs_manual: Optional[float] = None,
 ) -> GearDragResult:
     """
     Calcule l'incrément de traînée dû au train principal selon Gudmundsson Eq. (16-155) :
@@ -126,12 +127,12 @@ def compute_main_gear_drag_increment(
     )
 
 def compute_tail_gear_drag_increment(
-    fc: FlightConditions | None = None,
-    geom: AircraftGeometry | None = None,
-    aero: AeroParams | None = None,     # pas utilisé ici mais gardé pour homogénéité
+    fc: Optional[FlightConditions] = None,
+    geom: Optional[AircraftGeometry] = None,
+    aero: Optional[AeroParams] = None,     # pas utilisé ici mais gardé pour homogénéité
     *,
-    config_key: str | None = None,
-    delta_CDs_manual: float | None = None,
+    config_key: Optional[str] = None,
+    delta_CDs_manual: Optional[float] = None,
 ) -> GearDragResult:
     delta_CDs = 0.42
     

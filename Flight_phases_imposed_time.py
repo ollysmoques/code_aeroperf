@@ -159,9 +159,26 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
             res_mid = compute_cruise_condition(V_cruise_CAS, h_cruise, dT_isa, weight_mid, cg_mid)
             tas_mid_kts = res_mid['TAS_kts']
             d_cruise_nm = (tas_mid_kts * t_cruise) / 60.0
+            
+            # Collect forces for cruise phase
+            from total_drag import drag_total
+            cl_cruise, d_total_cruise, q_cruise, alpha_cruise, breakdown_cruise = drag_total(
+                h_cruise, dT_isa, tas_mid_kts, weight_mid, cg_mid, res_mid['Thrust_required'], 'cruise', return_breakdown=True
+            )
+            # Extract wing and empennage forces
+            wing_lift_cruise = weight_mid / (q_cruise * sref)  # Total lift ≈ weight in cruise
+            wing_drag_cruise = breakdown_cruise.get('induced_wing_from_equil', 0) if breakdown_cruise else 0
+            empennage_lift_cruise = 0  # Not directly available from breakdown
+            empennage_drag_cruise = breakdown_cruise.get('induced_tail', 0) if breakdown_cruise else 0
+            empennage_lift_cruise = breakdown_cruise.get('induced_tail', 0) if breakdown_cruise else 0  # This is actually drag, lift not directly available
+            empennage_drag_cruise = breakdown_cruise.get('induced_tail', 0) if breakdown_cruise else 0
         else:
             fuel_cruise_lb = 0.0
             d_cruise_nm = 0.0
+            wing_lift_cruise = 0
+            wing_drag_cruise = 0
+            empennage_lift_cruise = 0
+            empennage_drag_cruise = 0
         
         w_top_descent = Weight_start_cruise - fuel_cruise_lb
         
@@ -267,6 +284,23 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
     d_dict["groundroll"] = d_landing
     w_dict["final"] = w_final
     
+    # Collect forces for each phase (simplified - only cruise has detailed forces)
+    # Initialize default forces
+    wing_lift_cruise = 0
+    wing_drag_cruise = 0
+    empennage_lift_cruise = 0
+    empennage_drag_cruise = 0
+    
+    forces_dict = {
+        "takeoff": {"wing_lift": weight_decollage, "wing_drag": 0, "empennage_lift": 0, "empennage_drag": 0},
+        "accel": {"wing_lift": weight_after_accel, "wing_drag": 0, "empennage_lift": 0, "empennage_drag": 0},
+        "climb": {"wing_lift": weight_top_climb, "wing_drag": 0, "empennage_lift": 0, "empennage_drag": 0},
+        "cruise": {"wing_lift": wing_lift_cruise, "wing_drag": wing_drag_cruise, "empennage_lift": empennage_lift_cruise, "empennage_drag": empennage_drag_cruise},
+        "descent": {"wing_lift": w_top_descent, "wing_drag": 0, "empennage_lift": 0, "empennage_drag": 0},
+        "approach": {"wing_lift": w_touchdown, "wing_drag": 0, "empennage_lift": 0, "empennage_drag": 0},
+        "groundroll": {"wing_lift": w_final, "wing_drag": 0, "empennage_lift": 0, "empennage_drag": 0}
+    }
+    
     # Calcul du temps total réel simulé
     total_time_simulated = sum(t_dict.values())
     total_dist_simulated = sum(d_dict.values())
@@ -298,6 +332,7 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
         "weights_lb": w_dict,
         "times_min": t_dict,
         "ranges_NM": d_dict,
+        "forces_lbf": forces_dict,
         "landing_history": history_roll,
         "climb_history": history_climb if 'history_climb' in locals() else None,
         "descent_history": history_descent if 'history_descent' in locals() else None,
@@ -352,7 +387,7 @@ def plot_mission_fuel_analysis(res):
     # Graphique 2 : Répartition en pourcentage
     plt.figure(figsize=(8, 8))
     plt.pie(values, labels=phases, autopct='%1.1f%%', startangle=140, 
-            colors=plt.cm.viridis(np.linspace(0, 1, len(phases))),
+            colors=['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink'],
             explode=[0.05 if v == max(values) else 0 for v in values]) # Met en évidence la phase max
     plt.title('Fuel Burn Distribution', fontweight='bold')
     plt.savefig("fuel_distribution_pie.png")
@@ -496,6 +531,78 @@ def plot_mission_history(res):
     plt.savefig("mission_weight_cg_history.png")
     plt.close()
     print("Graph 'mission_weight_cg_history.png' generated.")
+
+
+def plot_forces_analysis(res):
+    """
+    Plots forces on wing and empenage for each flight phase.
+    Shows lift and drag forces separately for wing and empenage.
+    """
+    forces = res["forces_lbf"]
+    
+    phases = list(forces.keys())
+    phase_labels = ["Takeoff", "Accel", "Climb", "Cruise", "Descent", "Approach", "Ground Roll"]
+    
+    wing_lift = [forces[phase]["wing_lift"] for phase in phases]
+    wing_drag = [forces[phase]["wing_drag"] for phase in phases]
+    empennage_lift = [forces[phase]["empennage_lift"] for phase in phases]
+    empennage_drag = [forces[phase]["empennage_drag"] for phase in phases]
+    
+    # Create subplots
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # Wing Lift
+    bars1 = ax1.bar(phase_labels, wing_lift, color='skyblue', alpha=0.8, edgecolor='black')
+    ax1.set_ylabel("Wing Lift [lbf]", fontweight='bold')
+    ax1.set_title("Wing Lift by Flight Phase", fontweight='bold')
+    ax1.grid(axis='y', linestyle='--', alpha=0.5)
+    ax1.tick_params(axis='x', rotation=45)
+    
+    for bar, val in zip(bars1, wing_lift):
+        if val > 0:
+            ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(wing_lift)*0.01, 
+                     f'{val:.0f}', ha='center', va='bottom', fontsize=8)
+    
+    # Wing Drag
+    bars2 = ax2.bar(phase_labels, wing_drag, color='lightcoral', alpha=0.8, edgecolor='black')
+    ax2.set_ylabel("Wing Drag [lbf]", fontweight='bold')
+    ax2.set_title("Wing Drag by Flight Phase", fontweight='bold')
+    ax2.grid(axis='y', linestyle='--', alpha=0.5)
+    ax2.tick_params(axis='x', rotation=45)
+    
+    for bar, val in zip(bars2, wing_drag):
+        if val > 0:
+            ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(wing_drag + [1])*0.01, 
+                     f'{val:.1f}', ha='center', va='bottom', fontsize=8)
+    
+    # Empennage Lift
+    bars3 = ax3.bar(phase_labels, empennage_lift, color='lightgreen', alpha=0.8, edgecolor='black')
+    ax3.set_ylabel("Empennage Lift [lbf]", fontweight='bold')
+    ax3.set_title("Empennage Lift by Flight Phase", fontweight='bold')
+    ax3.grid(axis='y', linestyle='--', alpha=0.5)
+    ax3.tick_params(axis='x', rotation=45)
+    
+    for bar, val in zip(bars3, empennage_lift):
+        if val > 0:
+            ax3.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(empennage_lift + [1])*0.01, 
+                     f'{val:.1f}', ha='center', va='bottom', fontsize=8)
+    
+    # Empennage Drag
+    bars4 = ax4.bar(phase_labels, empennage_drag, color='orange', alpha=0.8, edgecolor='black')
+    ax4.set_ylabel("Empennage Drag [lbf]", fontweight='bold')
+    ax4.set_title("Empennage Drag by Flight Phase", fontweight='bold')
+    ax4.grid(axis='y', linestyle='--', alpha=0.5)
+    ax4.tick_params(axis='x', rotation=45)
+    
+    for bar, val in zip(bars4, empennage_drag):
+        if val > 0:
+            ax4.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(empennage_drag + [1])*0.01, 
+                     f'{val:.1f}', ha='center', va='bottom', fontsize=8)
+    
+    plt.tight_layout()
+    plt.savefig("forces_analysis.png", dpi=150, bbox_inches='tight')
+    plt.close()
+    print("Graph 'forces_analysis.png' generated.")
 
 
 def plot_stall_warnings(res):
@@ -655,6 +762,7 @@ if __name__ == "__main__":
     plot_mission_fuel_analysis(res_analysis)
     plot_fuel_efficiency(res_analysis)
     plot_mission_history(res_analysis)
+    plot_forces_analysis(res_analysis)
     plot_stall_warnings(res_analysis)
     print("Graphs 'fuel_burn_per_phase.png' and 'fuel_distribution_pie.png' generated.")
 

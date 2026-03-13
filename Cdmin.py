@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from skin_friction import (
     WingFrictionResult,
@@ -93,9 +94,9 @@ def build_component_drag(
 # ==============================
 
 def compute_all_components(
-    fc: FlightConditions | None = None,
-    geom: AircraftGeometry | None = None,
-    aero: AeroParams | None = None,
+    fc: Optional[FlightConditions] = None,
+    geom: Optional[AircraftGeometry] = None,
+    aero: Optional[AeroParams] = None,
 ) -> list[ComponentDrag]:
     """
     Si aucun argument n'est passé, utilise les inputs par défaut.

@@ -10,7 +10,7 @@ VY_kts                        : 81
 V_cruise_CAS_kts              : 108
 TO_weight_lb                  : 412.0
 TIME_IMPOSED_MIN              : 25
-Calculated_Range_NM           : 29.211459013678898
+Calculated_Range_NM           : 29.2114590136789
 V_Takeoff_CAS_kts             : 60.49019932854635
 V_Cruise_CAS_kts              : 108
 V_Approach_CAS_kts            : 81

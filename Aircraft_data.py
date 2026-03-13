@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import math
+from typing import Optional
 
 
 # ==============================
@@ -106,7 +107,7 @@ class AircraftGeometry:
     gear: MainGear
     tailgear: TailGear
     Motor: MotorParameter
-    flaps: FlapGeometry | None = None
+    flaps: Optional[FlapGeometry] = None
     
 
 # ==============================
