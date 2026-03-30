@@ -300,7 +300,7 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
         cl_max_30 = 1.98,
 
         # ---- masses ----
-        OEW       = 160,
+        OEW       = 218,
         FUEL_LOAD = 75.0,
         RESERVE   = 7.0,
         PAYLOAD   = 170,   # tu pourras changer ça plus tard

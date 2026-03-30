@@ -27,8 +27,8 @@ def v_lof_v_r(h_ft,dT_isa,weight,CL_max,sref):
     
     Vs_ft_s = np.sqrt(2*weight/(rho*sref*CL_max))
     
-    v_r = 1.45*Vs_ft_s
-    v_lof = 1.55*Vs_ft_s
+    v_r = 1.55*Vs_ft_s
+    v_lof = 1.65*Vs_ft_s
 
     return v_r, v_lof
     

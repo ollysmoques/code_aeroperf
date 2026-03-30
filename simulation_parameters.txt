@@ -8,13 +8,13 @@ h_airport_ft                  : 0
 dT_isa_C                      : 0
 VY_kts                        : 81
 V_cruise_CAS_kts              : 108
-TO_weight_lb                  : 412.0
+TO_weight_lb                  : 470.0
 TIME_IMPOSED_MIN              : 25
-Calculated_Range_NM           : 29.2114590136789
-V_Takeoff_CAS_kts             : 60.49019932854635
+Calculated_Range_NM           : 38.59855173428231
+V_Takeoff_CAS_kts             : 64.61234331956005
 V_Cruise_CAS_kts              : 108
 V_Approach_CAS_kts            : 81
-V_Touchdown_CAS_kts           : 45.64071331439904
+V_Touchdown_CAS_kts           : 49.01808939356817
 
 --- 2. AIRCRAFT DEFINITION (aero) ---
 {   'AR_emp': 6.0,
@@ -26,8 +26,8 @@ V_Touchdown_CAS_kts           : 45.64071331439904
     'IF_tail_key': 'h_tail_lockheed_electra',
     'IF_wing_key': 'low_wing_unfilleted',
     'MAC': 2.3,
-    'MAX_TO': 412.0,
-    'OEW': 160,
+    'MAX_TO': 470.0,
+    'OEW': 218,
     'PAYLOAD': 170,
     'RESERVE': 7.0,
     'alpha_ini_deg': 6.0,
