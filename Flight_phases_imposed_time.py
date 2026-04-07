@@ -789,6 +789,9 @@ if __name__ == "__main__":
                 "dT_isa_C": 0, # Pour le cas standard
                 "VY_kts": VY,
                 "V_cruise_CAS_kts": V_cruise_CAS,
+                "V_r_kts": res_std["speeds_kts"]["rotation_cas"],
+                "V_lof_kts": res_std["speeds_kts"]["liftoff_cas"],
+                "V_stall_kts": res_std["speeds_kts"]["stall_cas"],
                 "TO_weight_lb": TO_weight,
                 "TIME_IMPOSED_MIN": TIME_IMPOSED_MIN,
                 "Calculated_Range_NM": res_std["ranges_NM"]["cruise"], 

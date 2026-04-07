@@ -9,12 +9,12 @@ dT_isa_C                      : 0
 VY_kts                        : 81
 V_cruise_CAS_kts              : 108
 TO_weight_lb                  : 470.0
-TIME_IMPOSED_MIN              : 25
-Calculated_Range_NM           : 38.59855173428231
-V_Takeoff_CAS_kts             : 64.61234331956005
+Weight_Reserve_lb             : 395.0
+Calculated_Range_NM           : 86.216454320972
+V_Takeoff_CAS_kts             : 57.80690967795894
 V_Cruise_CAS_kts              : 108
 V_Approach_CAS_kts            : 81
-V_Touchdown_CAS_kts           : 49.01808939356817
+V_Touchdown_CAS_kts           : 50.62151538125898
 
 --- 2. AIRCRAFT DEFINITION (aero) ---
 {   'AR_emp': 6.0,
@@ -35,9 +35,9 @@ V_Touchdown_CAS_kts           : 49.01808939356817
     'alpha_trans_deg': 3.0,
     'b_h_stab': 6.0,
     'cg_mac': 0.866,
-    'cl_max_15': 1.9,
-    'cl_max_30': 1.98,
-    'cl_max_clean': 1.63,
+    'cl_max_15': 1.625,
+    'cl_max_30': 1.685,
+    'cl_max_clean': 1.506,
     'cp_mac': 0.25,
     'dT_isa_TO': 0.0,
     'h_TO_ft': 0.0,

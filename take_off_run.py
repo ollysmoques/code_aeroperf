@@ -27,8 +27,8 @@ def v_lof_v_r(h_ft,dT_isa,weight,CL_max,sref):
     
     Vs_ft_s = np.sqrt(2*weight/(rho*sref*CL_max))
     
-    v_r = 1.55*Vs_ft_s
-    v_lof = 1.65*Vs_ft_s
+    v_r = 1.13*Vs_ft_s
+    v_lof = 1.2*Vs_ft_s
 
     return v_r, v_lof
     
@@ -81,6 +81,7 @@ def groundrun(v_trans, weight_initial, alpha_trans, alpha_ini, h_ft, dT_isa, pow
    
     
     v_r, v_lof = v_lof_v_r(h_ft, dT_isa, weight_initial, CL_max, sref)
+    Vs_ft_s = v_r / 1.1  # stall speed for reference
     
     # Precompute static atmosphere for runway altitude
     atm_run = atmosphere(h_ft, dT_isa, mode='delta_isa')
@@ -143,21 +144,26 @@ def groundrun(v_trans, weight_initial, alpha_trans, alpha_ini, h_ft, dT_isa, pow
         weight -= fuel_consumption/60 * dt
         if flag: break
 
-    # --- PHASE 3 ---
-    while v < v_lof:
+    # --- PHASE 3 --- (continue until actual liftoff: lift >= weight)
+    v_safety = 2.0 * v_lof  # safety limit to prevent infinite loop
+    while not flag and v < v_safety:
         
         cg_mac_current = compute_cg_mac(weight)
         
         a, flag, lift, drag, fric, thrust, norm, cl, q = sumforce(
             mu, h_ft, dT_isa, v, weight, alpha_rot, poussee, cg_mac_current
         )
-        record_step(v, distance, a, lift, drag, fric, thrust, norm, cl, sref,weight)
+        record_step(v, distance, a, lift, drag, fric, thrust, norm, cl, sref, weight)
         t += dt
         v_2 = dt*a + v
         distance += ((v_2 + v)/2)*dt
         v = v_2
         weight -= fuel_consumption/60 * dt
-        if flag: break
+    
+    if not flag:
+        print(f"WARNING: Aircraft did not achieve liftoff by {v_safety:.1f} ft/s!")
+    else:
+        print(f"Liftoff at {v:.1f} ft/s ({v/1.6878:.1f} kts) = {v/Vs_ft_s:.2f} x Vs")
     
     C_L = weight/(q*sref)
     print('--------- CL FINAL ---------- = ', C_L)
@@ -175,45 +181,28 @@ v_takeoff_ft_s = h['v'][-1]
 v_takeoff_kts = v_takeoff_ft_s / 1.6878
 print(f"Vitesse de takeoff: {v_takeoff_kts:.2f} kts ({v_takeoff_ft_s:.2f} ft/s)")
 
-# --- PLOTTING (Mise à jour pour 4 graphiques) ---
-# On passe à 4 lignes (nrows=4) et on augmente la hauteur (figsize)
+# --- PLOTTING (x-axis = runway distance) ---
 fig, axs = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
 
-v_kts = np.array(h['v']) / 1.6878
+dist_ft = np.array(h['dist'])
 
 # Graphique 1 : Bilan des Forces
-axs[0].plot(v_kts, h['thrust'], label='Thrust', color='green', linewidth=2)
-axs[0].plot(v_kts, h['drag'], label='Drag', color='red')
-axs[0].plot(v_kts, h['friction'], label='Friction', color='orange', linestyle='--')
+axs[0].plot(dist_ft, h['thrust'], label='Thrust', color='green', linewidth=2)
+axs[0].plot(dist_ft, h['drag'], label='Drag', color='red')
+axs[0].plot(dist_ft, h['friction'], label='Friction', color='orange', linestyle='--')
 axs[0].set_ylabel('Forces [lbf]')
-axs[0].set_title('Forces analysis')
+axs[0].set_title('Takeoff Ground Roll - Forces Analysis')
 axs[0].legend(loc='upper right')
 axs[0].grid(True, alpha=0.3)
 
-
-# Graphique 2 : Accélération
-#axs[1].plot(v_kts, h['a'], color='purple', linewidth=2)
-#axs[1].set_ylabel('Acceleration [ft/s²]')
-#axs[1].grid(True, alpha=0.3)
-
-
-# Graphique 4 : Portance vs Poids
-axs[1].plot(v_kts, h['lift'], label='Lift', color='blue')
-axs[1].plot(v_kts, h['weight'], label='Weight', color='black', linestyle='--')
-axs[1].plot(v_kts, h['norme'], label='Weight on wheels', color='grey', linestyle=':')
-axs[1].set_xlabel('Speed [kts]')
+# Graphique 2 : Portance vs Poids
+axs[1].plot(dist_ft, h['lift'], label='Lift', color='blue')
+axs[1].plot(dist_ft, h['weight'], label='Weight', color='black', linestyle='--')
+axs[1].plot(dist_ft, h['norme'], label='Weight on wheels', color='grey', linestyle=':')
+axs[1].set_xlabel('Runway distance [ft]')
 axs[1].set_ylabel('Vertical forces [lbf]')
 axs[1].legend(loc='upper left')
 axs[1].grid(True, alpha=0.3)
-
-# Ajout des lignes verticales sur TOUS les graphiques
-#for ax in axs:
-   #ax.axvline(x=v_trans, color='k', linestyle='--', alpha=0.5)
-    #ax.axvline(x=v_r, color='k', linestyle='--', alpha=0.5)
-
-# On met les textes seulement sur le graphe du haut pour ne pas surcharger
-#axs[0].text(v_trans, axs[0].get_ylim()[0], ' Trans', rotation=90, verticalalignment='bottom')
-#axs[0].text(v_r, axs[0].get_ylim()[0], ' Rot', rotation=90, verticalalignment='bottom')
 
 plt.tight_layout()
 plt.savefig('analyse_decollage.png', dpi=300, bbox_inches='tight')
