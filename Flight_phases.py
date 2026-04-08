@@ -153,9 +153,10 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
     h_start_climb = 5.0       # Début de montée après accélération
     h_end_climb   = h_cruise  
 
+    CLIMB_POWER_SETTING = 0.90  # Réglage de puissance pour la montée
     t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb, history_climb = montee(
         hpi=h_start_climb, hpf=h_end_climb, dT_isa=dT_isa, CAS_kts=CAS_climb_kts,
-        weight_initial=weight, sref=sref, power_setting=0.75
+        weight_initial=weight, sref=sref, power_setting=CLIMB_POWER_SETTING
     )
 
     temps_total_min   += t_climb_min
@@ -315,7 +316,7 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
         "power_settings": {
             "takeoff": 1.0,
             "accel": 1.0,
-            "climb": 0.75,
+            "climb": CLIMB_POWER_SETTING,
             "cruise": avg_cruise_power,
             "descent": IDLE_POWER_SETTING,
             "approach": IDLE_POWER_SETTING, # Approximated as Idle/Low for this graph

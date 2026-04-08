@@ -81,7 +81,7 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
 
     t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb, history_climb = montee(
         hpi=h_start_climb, hpf=h_end_climb, dT_isa=dT_isa, CAS_kts=CAS_climb_kts,
-        weight_initial=weight, sref=sref, power_setting=0.75
+        weight_initial=weight, sref=sref, power_setting=0.90
     )
     weight = weight_top_climb
     
