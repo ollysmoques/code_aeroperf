@@ -6,15 +6,15 @@
 h_cruise_ft                   : 2000
 h_airport_ft                  : 0
 dT_isa_C                      : 0
-VY_kts                        : 89
+VY_kts                        : 81
 V_cruise_CAS_kts              : 108
 TO_weight_lb                  : 500.0
 Weight_Reserve_lb             : 425.0
-Calculated_Range_NM           : 73.15499451367083
+Calculated_Range_NM           : 72.5323069928687
 V_Takeoff_CAS_kts             : 63.52491187167684
 V_Cruise_CAS_kts              : 108
-V_Approach_CAS_kts            : 89
-V_Touchdown_CAS_kts           : 54.226337175565256
+V_Approach_CAS_kts            : 81
+V_Touchdown_CAS_kts           : 54.22518974044697
 
 --- 2. AIRCRAFT DEFINITION (aero) ---
 {   'AR_emp': 6.0,

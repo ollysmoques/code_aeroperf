@@ -1,5 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+
+# Output directory for saved figures
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 from take_off_run import groundrun
 from Aircraft_data import get_default_inputs
 
@@ -65,7 +70,7 @@ def generate_takeoff_carpet_plot():
     
     plt.tight_layout()
     
-    filename = "takeoff_carpet_plot.png"
+    filename = os.path.join(OUTPUT_DIR, "takeoff_carpet_plot.png")
     plt.savefig(filename, dpi=300)
     print(f"\nPlot generated: {filename} (Displaying now...)")
     plt.show()

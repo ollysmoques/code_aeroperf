@@ -1,5 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+
+# Output directory for saved figures
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 from atmosphere import *
 from total_drag import * 
 from Aircraft_data import get_default_inputs
@@ -205,7 +210,7 @@ axs[1].legend(loc='upper left')
 axs[1].grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('analyse_decollage.png', dpi=300, bbox_inches='tight')
+plt.savefig(os.path.join(OUTPUT_DIR, 'analyse_decollage.png'), dpi=300, bbox_inches='tight')
 plt.show()
 
 # =============================================================================
@@ -283,7 +288,7 @@ def generate_3d_takeoff_plot():
     ax.view_init(elev=30, azim=-135)
     
     plt.tight_layout()
-    plt.savefig('takeoff_dist_vs_alt_isa.png', dpi=300)
+    plt.savefig(os.path.join(OUTPUT_DIR, 'takeoff_dist_vs_alt_isa.png'), dpi=300)
     plt.show()
     print("Graphique 3D généré et sauvegardé sous 'takeoff_dist_vs_alt_isa.png'.")
 

@@ -15,6 +15,10 @@ from Flight_phases import save_run_parameters
 from config_loader import get as cfg
 import os
 
+# Output directory for saved figures and reports
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 
 def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight_initial):
     
@@ -382,7 +386,7 @@ def plot_mission_fuel_analysis(res):
                  f'{yval:.2f} lb', ha='center', va='bottom', fontsize=10)
 
     plt.tight_layout()
-    plt.savefig("fuel_burn_per_phase.png")
+    plt.savefig(os.path.join(OUTPUT_DIR, "fuel_burn_per_phase.png"))
     plt.close()
 
     # Graphique 2 : Répartition en pourcentage
@@ -391,7 +395,7 @@ def plot_mission_fuel_analysis(res):
             colors=['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink'],
             explode=[0.05 if v == max(values) else 0 for v in values]) # Met en évidence la phase max
     plt.title('Fuel Burn Distribution', fontweight='bold')
-    plt.savefig("fuel_distribution_pie.png")
+    plt.savefig(os.path.join(OUTPUT_DIR, "fuel_distribution_pie.png"))
     plt.close()
 
 def plot_fuel_efficiency(res):
@@ -461,7 +465,7 @@ def plot_fuel_efficiency(res):
         
     plt.xlabel("Flight Phase")
     plt.tight_layout()
-    plt.savefig("fuel_efficiency_analysis.png")
+    plt.savefig(os.path.join(OUTPUT_DIR, "fuel_efficiency_analysis.png"))
     plt.close()
     print("Graph 'fuel_efficiency_analysis.png' generated.")
 
@@ -529,7 +533,7 @@ def plot_mission_history(res):
              ax2.text(times[i], v, f"{v:.3f}", ha='center', va='bottom', fontsize=8)
 
     plt.tight_layout()
-    plt.savefig("mission_weight_cg_history.png")
+    plt.savefig(os.path.join(OUTPUT_DIR, "mission_weight_cg_history.png"))
     plt.close()
     print("Graph 'mission_weight_cg_history.png' generated.")
 
@@ -601,7 +605,7 @@ def plot_forces_analysis(res):
                      f'{val:.1f}', ha='center', va='bottom', fontsize=8)
     
     plt.tight_layout()
-    plt.savefig("forces_analysis.png", dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join(OUTPUT_DIR, "forces_analysis.png"), dpi=150, bbox_inches='tight')
     plt.close()
     print("Graph 'forces_analysis.png' generated.")
 
@@ -650,7 +654,7 @@ def plot_stall_warnings(res):
     plt.grid(True, linestyle=':', alpha=0.6)
     plt.legend(loc='best')
     plt.tight_layout()
-    plt.savefig('stall_warnings_by_phase.png')
+    plt.savefig(os.path.join(OUTPUT_DIR, 'stall_warnings_by_phase.png'))
     plt.close()
 
     if any_warning:
@@ -776,7 +780,7 @@ if __name__ == "__main__":
     plt.ylim(bottom=0, top=h_cruise * 1.2) # Marge au dessus
     
     plt.tight_layout()
-    plt.savefig("time_imposed_profile_sensitivity.png")
+    plt.savefig(os.path.join(OUTPUT_DIR, "time_imposed_profile_sensitivity.png"))
     print("\nGraph saved as 'time_imposed_profile_sensitivity.png'")
     plt.show()
     
@@ -809,7 +813,7 @@ if __name__ == "__main__":
                 "aero": aero
             }
             
-            output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "simulation_parameters.txt")
+            output_path = os.path.join(OUTPUT_DIR, "simulation_parameters.txt")
             save_run_parameters(output_path, mission_inputs, aircraft_objects)
             
         except Exception as e:

@@ -15,6 +15,10 @@ import pprint
 from dataclasses import asdict
 import os
 
+# Output directory for saved figures and reports
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 def save_run_parameters(filename, run_inputs, aircraft_data):
     """
     Saves the simulation parameters to a text file.
@@ -358,7 +362,7 @@ try:
         "aero": aero
     }
     
-    save_run_parameters("simulation_parameters.txt", mission_inputs, aircraft_objects)
+    save_run_parameters(os.path.join(OUTPUT_DIR, "simulation_parameters.txt"), mission_inputs, aircraft_objects)
 
 except Exception as e:
     print(f"[WARNING] Could not save parameters report: {e}")
