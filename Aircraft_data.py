@@ -301,7 +301,7 @@ def get_default_inputs() -> tuple[FlightConditions, AircraftGeometry, AeroParams
         cl_max_30 = 1.58,
 
         # ---- masses (surchargées par le launcher si config existe) ----
-        OEW       = cfg("OEW", 248),
+        OEW       = cfg("OEW", 218),
         FUEL_LOAD = cfg("FUEL_LOAD", 75.0),
         RESERVE   = cfg("RESERVE", 7.0),
         PAYLOAD   = cfg("PAYLOAD", 170),

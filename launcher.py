@@ -81,6 +81,24 @@ MODULES = [
         "category": "Décollage",
     },
     {
+        "name": "🛞 Simulation roulement décollage",
+        "file": "take_off_run.py",
+        "desc": "Simulation pas-à-pas du roulement au sol : forces, portance, vitesse de liftoff.",
+        "detail": (
+            "TAKE_OFF_RUN.PY — Ground Roll Simulation\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Simulation dynamique du roulement au décollage en 3 phases :\n"
+            "  1. Roulage initial (α initial) jusqu'à V_transition\n"
+            "  2. Transition (α transition) jusqu'à V_rotation\n"
+            "  3. Rotation (α rotation) jusqu'au liftoff (L ≥ W)\n\n"
+            "Graphiques :\n"
+            "  • Bilan des forces (Thrust, Drag, Friction) vs distance\n"
+            "  • Portance vs Poids vs distance\n\n"
+            "Sorties console : distance totale, temps, vitesse de liftoff."
+        ),
+        "category": "Décollage",
+    },
+    {
         "name": "📊 Carpet plot décollage",
         "file": "takeoff_carpet_plot.py",
         "desc": "Abaque distance de décollage vs altitude et température.",
@@ -115,7 +133,7 @@ PARAM_GROUPS = [
     {
         "group": "Masses",
         "params": [
-            ("OEW",       "OEW (Operating Empty Weight)", 248,   "lb"),
+            ("OEW",       "OEW (Operating Empty Weight)", 218,   "lb"),
             ("FUEL_LOAD", "Fuel Load",                    75.0,  "lb"),
             ("RESERVE",   "Fuel Reserve",                 7.0,   "lb"),
             ("PAYLOAD",   "Payload",                      170,   "lb"),

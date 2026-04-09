@@ -1,0 +1,13 @@
+{
+  "OEW": 218,
+  "FUEL_LOAD": 75.0,
+  "RESERVE": 7.0,
+  "PAYLOAD": 170,
+  "MISSION_HEIGHT_FT": 2000,
+  "h_airport": 0,
+  "dT_Isa": 0,
+  "TIME_IMPOSED_MIN": 25,
+  "VY": 87,
+  "V_cruise_CAS": 108,
+  "CLIMB_POWER_SETTING": 0.9
+}
