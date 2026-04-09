@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-AeroPerf Launcher — Interface de sélection.
+AeroPerf Launcher — Interface de sélection avec paramètres éditables.
 Le script choisi s'exécute dans la console de l'IDE après fermeture du menu.
 """
 
@@ -9,6 +9,7 @@ from tkinter import ttk
 import runpy
 import os
 import sys
+import json
 
 # ============================================================
 # CONFIGURATION DES MODULES
@@ -18,209 +19,129 @@ MODULES = [
     {
         "name": "🛫 Mission complète (Range libre)",
         "file": "Flight_phases.py",
-        "desc": (
-            "Simule le profil de mission complet : décollage, accélération, "
-            "montée, croisière (range libre), descente, approche et atterrissage. "
-            "Produit les graphiques de poids, altitude, CG et thrust %."
-        ),
+        "desc": "Mission complète : décollage → croisière (range libre) → atterrissage. Graphs de poids, altitude, CG, thrust %.",
         "detail": (
             "FLIGHT_PHASES.PY — Simulation de mission à range libre\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Ce script simule un vol complet de l'avion en 7 phases :\n\n"
-            "  1. Décollage (groundrun) — Roulement au sol jusqu'au décollage.\n"
-            "     Utilise la poussée max (100%) et CL_max avec flaps.\n\n"
-            "  2. Accélération — Transition de la vitesse de décollage vers\n"
-            "     la vitesse de montée (VY = best ROC speed).\n\n"
-            "  3. Montée — De 5 ft à l'altitude de croisière (MISSION_HEIGHT_FT).\n"
-            "     Power setting configurable (CLIMB_POWER_SETTING).\n\n"
-            "  4. Croisière — Vol en palier jusqu'à épuisement du carburant\n"
-            "     (moins la réserve). Le range est calculé librement.\n\n"
-            "  5. Descente — De l'altitude de croisière à 1000 ft (idle power).\n\n"
-            "  6. Approche & Arrondi — De 1000 ft au sol avec glide slope -3°.\n\n"
-            "  7. Roulement à l'atterrissage — Freinage jusqu'à l'arrêt.\n\n"
-            "Graphiques produits :\n"
-            "  • Poids vs Temps (fuel burn profile)\n"
-            "  • Altitude vs Temps (flight profile)\n"
-            "  • Sensibilité ISA (-15°C, 0°C, +15°C)\n"
-            "  • Position du CG vs Temps\n"
-            "  • CG vs Poids\n"
-            "  • Thrust % vs Phase de vol\n"
-            "  • Stall warnings par phase\n\n"
-            "Paramètres clés :\n"
-            "  • h_cruise : défini dans Mission_parameters.py\n"
-            "  • VY, V_cruise_CAS : vitesses en kts\n"
-            "  • Données avion : Aircraft_data.py"
+            "7 phases : décollage, accélération, montée, croisière,\n"
+            "descente, approche & arrondi, roulement atterrissage.\n\n"
+            "Le range de croisière est libre (vole jusqu'à la réserve).\n\n"
+            "Graphiques : poids, altitude, sensibilité ISA, CG, thrust %."
         ),
         "category": "Mission",
     },
     {
         "name": "⏱️ Mission à temps imposé",
         "file": "Flight_phases_imposed_time.py",
-        "desc": (
-            "Simule le profil de mission avec un temps de vol imposé. "
-            "La durée de croisière est ajustée pour respecter le temps total. "
-            "Produit les graphiques de mission + analyse sensibilité ISA."
-        ),
+        "desc": "Mission avec temps de vol imposé. La croisière s'ajuste au temps total.",
         "detail": (
             "FLIGHT_PHASES_IMPOSED_TIME.PY — Mission à durée imposée\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Variante de Flight_phases.py où le temps total de vol est fixé\n"
-            "(variable TIME_IMPOSED_MIN dans le __main__).\n\n"
-            "La durée de croisière est calculée par itération :\n"
-            "  t_cruise = t_total - t_takeoff - t_accel - t_climb\n"
-            "             - t_descent - t_approach - t_landing\n\n"
-            "Comme t_descent dépend du poids (qui dépend de t_cruise),\n"
-            "une boucle d'itération converge vers la solution.\n\n"
-            "Graphiques produits :\n"
-            "  • Profil altitude vs temps (sensibilité ISA)\n"
-            "  • Consommation de fuel par phase (histogramme)\n"
-            "  • Distribution du fuel (camembert)\n"
-            "  • Fuel flow et specific range par phase\n"
-            "  • Historique poids et CG\n"
-            "  • Forces aile/empennage par phase\n"
-            "  • Stall warnings\n\n"
-            "Paramètre clé à modifier :\n"
-            "  • TIME_IMPOSED_MIN (ligne ~667) : durée totale en minutes"
+            "t_cruise = t_total - t_fixe. Boucle itérative pour converger.\n\n"
+            "Paramètre clé : TIME_IMPOSED_MIN (modifiable ci-dessous).\n"
+            "Graphiques : profil, fuel par phase, efficacité, CG, stall."
         ),
         "category": "Mission",
     },
     {
-        "name": "📈 Analyse ROC (Rate of Climb)",
+        "name": "📈 Analyse ROC",
         "file": "ROC.py",
-        "desc": (
-            "Calcule le taux de montée (ROC) vs CAS et altitude. "
-            "Produit une surface 3D, courbes 2D et identifie Vy."
-        ),
+        "desc": "Rate of Climb vs CAS et altitude. Surface 3D, courbes 2D, Vy.",
         "detail": (
             "ROC.PY — Rate of Climb Analysis\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Calcule le taux de montée corrigé (ROC) selon la formule :\n"
-            "  ROC = TAS × (Thrust − Drag) / Weight / (1 + AF)\n"
-            "  ROC_corrigé = ROC × (T_std / T)\n\n"
-            "Où AF est le facteur d'accélération qui tient compte\n"
-            "de l'énergie cinétique absorbée en montée à CAS constante.\n\n"
-            "Fonctions principales :\n"
-            "  • ROC() — Calcul ponctuel du ROC\n"
-            "  • montee() — Simulation de montée pas à pas (dh=5 ft)\n"
-            "  • descente() — Simulation de descente pas à pas\n"
-            "  • acceleration() — Phase d'accélération en palier\n"
-            "  • find_initial_weight_for_descent() — Itération inverse\n\n"
-            "Graphiques produits :\n"
-            "  • Surface 3D : ROC vs CAS vs Altitude\n"
-            "  • Courbe 2D : ROC vs CAS à 0 ft et altitude mission\n"
-            "  • Identification de Vy (best rate of climb speed)\n\n"
-            "Seuil de sécurité : ROC < 300 ft/min → montée interrompue"
+            "ROC = TAS × (T−D) / W / (1+AF)\n"
+            "Fonctions : montee(), descente(), acceleration()\n"
+            "Seuil sécurité : ROC < 300 ft/min → montée interrompue."
         ),
         "category": "Performance",
     },
     {
         "name": "✈️ Analyse de traînée",
         "file": "drag_analysis.py",
-        "desc": (
-            "Décomposition de la traînée pour 3 conditions (décollage, croisière, "
-            "atterrissage). Diagrammes camembert par composante."
-        ),
+        "desc": "Décomposition traînée (décollage, croisière, atterrissage). Camemberts.",
         "detail": (
             "DRAG_ANALYSIS.PY — Décomposition de la traînée\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Effectue un calcul d'équilibre (alpha_eq) pour 3 conditions :\n"
-            "  • Décollage : h=0 ft, V=51.4 kts, flaps 15°\n"
-            "  • Croisière : h=10000 ft, V=108 kts, clean\n"
-            "  • Atterrissage : h=0 ft, V=75 kts, flaps 30°\n\n"
-            "Décomposition par composante :\n"
-            "  ─ Traînée parasite (friction + forme + interférence) :\n"
-            "      Aile, Empennage H, Empennage V, Fuselage,\n"
-            "      Nacelle, Pylône, Train principal, Train arrière\n"
-            "  ─ Traînée induite :\n"
-            "      Aile (polaire), Empennage (trim)\n\n"
-            "Chaque condition produit :\n"
-            "  • Résumé console (alpha_eq, D_total, CD_total)\n"
-            "  • Diagramme camembert de répartition\n\n"
-            "Dépendances : Cdmin.py, induced_equilibrium.py, helpers.py"
+            "3 conditions : TO (flaps 15°), Cruise (clean), Landing (flaps 30°).\n"
+            "Parasite + induite par composante. Camemberts."
         ),
         "category": "Aérodynamique",
     },
     {
         "name": "🔍 Diagnostic décollage",
         "file": "diag_takeoff.py",
-        "desc": (
-            "Vérifie si l'avion peut décoller. Calcule Vs, Vr, Vlof et "
-            "trace les forces en fonction de la vitesse."
-        ),
+        "desc": "Vérifie la faisabilité du décollage. Calcule Vs, Vr, Vlof.",
         "detail": (
             "DIAG_TAKEOFF.PY — Diagnostic de décollage\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Vérifie la faisabilité du décollage avec la configuration\n"
-            "actuelle de l'avion (poids, CL_max, poussée, alpha_rot).\n\n"
-            "Calculs effectués :\n"
-            "  • Vs  = vitesse de décrochage (stall speed)\n"
-            "  • Vr  = 1.1 × Vs (vitesse de rotation)\n"
-            "  • Vlof = 1.2 × Vs (vitesse de décollage)\n\n"
-            "Tableau de forces vs vitesse :\n"
-            "  Pour chaque vitesse de 60 à 130 ft/s, affiche :\n"
-            "  Portance, T×sin(α), Force totale vers le haut, Poids,\n"
-            "  et indique si le décollage est possible (YES/no).\n\n"
-            "Diagnostic final :\n"
-            "  • À quelle vitesse l'avion décolle-t-il ?\n"
-            "  • Quel alpha serait nécessaire à Vlof ?\n"
-            "  • L'alpha_rot actuel est-il suffisant ?"
+            "Calcule Vs, Vr (1.1×Vs), Vlof (1.2×Vs).\n"
+            "Tableau forces vs vitesse. Indique si liftoff est possible."
         ),
         "category": "Décollage",
     },
     {
         "name": "📊 Carpet plot décollage",
         "file": "takeoff_carpet_plot.py",
-        "desc": (
-            "Abaque de distance de décollage vs altitude aéroport "
-            "et température (ISA, ISA+15, ISA+30)."
-        ),
+        "desc": "Abaque distance de décollage vs altitude et température.",
         "detail": (
             "TAKEOFF_CARPET_PLOT.PY — Abaque de décollage\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Génère un carpet plot montrant la distance de roulement\n"
-            "au décollage en fonction de :\n\n"
-            "  • Altitude de l'aéroport : 0 à 8000 ft (9 points)\n"
-            "  • Température : ISA, ISA+15°C, ISA+30°C\n\n"
-            "Conditions fixes :\n"
-            "  • Poids : MTOW (poids max au décollage)\n"
-            "  • Pente de piste : 0° (standard)\n"
-            "  • CL_max : configuration décollage avec flaps\n\n"
-            "Utilité :\n"
-            "  Permet d'évaluer rapidement si l'avion peut opérer\n"
-            "  depuis un aéroport donné (altitude + température).\n"
-            "  Plus l'altitude et la température sont élevées,\n"
-            "  plus la distance de décollage augmente.\n\n"
-            "Sortie : Graphique PNG (takeoff_carpet_plot.png)"
+            "Distance de roulement vs altitude (0-8000ft)\n"
+            "et température (ISA, ISA+15, ISA+30). MTOW fixe."
         ),
         "category": "Décollage",
     },
     {
-        "name": "🔧 Poussée moteur (Thrust data)",
+        "name": "🔧 Poussée moteur",
         "file": "Thrust_data.py",
-        "desc": (
-            "Poussée du SW400 Pro vs altitude pour différentes "
-            "conditions de température (ΔISA = -20, 0, +20°C)."
-        ),
+        "desc": "SW400 Pro : poussée vs altitude pour ΔISA = -20, 0, +20°C.",
         "detail": (
-            "THRUST_DATA.PY — Modèle de poussée moteur\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "Modélise la poussée du moteur SW400 Pro :\n"
-            "  Thrust = T_sl × σ × power_setting\n\n"
-            "Où :\n"
-            "  • T_sl = poussée max au niveau de la mer (89 lbf)\n"
-            "  • σ = rapport de densité (sigma = ρ / ρ₀)\n"
-            "  • power_setting = réglage de puissance (0 à 1)\n\n"
-            "Consommation de carburant :\n"
-            "  Fuel_flow = base_flow × power_setting\n"
-            "  (base_flow = 2.3 lb/min à 100%)\n\n"
-            "Graphique produit :\n"
-            "  Poussée vs Altitude pour ΔISA = -20, 0, +20°C\n"
-            "  Montre la dégradation de poussée avec l'altitude\n"
-            "  et la sensibilité à la température.\n\n"
-            "Ce modèle est utilisé par toutes les phases de vol\n"
-            "(ROC, croisière, descente, etc.)."
+            "THRUST_DATA.PY — Modèle de poussée\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Thrust = T_sl × σ × power_setting\n"
+            "T_sl = 89 lbf, Fuel_flow = 2.3 lb/min @ 100%."
         ),
         "category": "Propulsion",
+    },
+]
+
+# ============================================================
+# PARAMÈTRES ÉDITABLES
+# ============================================================
+# Chaque paramètre : (clé JSON, label affiché, valeur par défaut, unité)
+
+PARAM_GROUPS = [
+    {
+        "group": "Masses",
+        "params": [
+            ("OEW",       "OEW (Operating Empty Weight)", 248,   "lb"),
+            ("FUEL_LOAD", "Fuel Load",                    75.0,  "lb"),
+            ("RESERVE",   "Fuel Reserve",                 7.0,   "lb"),
+            ("PAYLOAD",   "Payload",                      170,   "lb"),
+        ],
+    },
+    {
+        "group": "Mission",
+        "params": [
+            ("MISSION_HEIGHT_FT", "Altitude de croisière",   2000,  "ft"),
+            ("h_airport",         "Altitude de l'aéroport",  0,     "ft"),
+            ("dT_Isa",            "Delta ISA",               0,     "°C"),
+            ("TIME_IMPOSED_MIN",  "Temps imposé (si applicable)", 25, "min"),
+        ],
+    },
+    {
+        "group": "Vitesses",
+        "params": [
+            ("VY",           "VY (best ROC speed)",    81,  "kts CAS"),
+            ("V_cruise_CAS", "Vitesse de croisière",   108, "kts CAS"),
+        ],
+    },
+    {
+        "group": "Puissance",
+        "params": [
+            ("CLIMB_POWER_SETTING", "Power setting montée", 0.90, "0-1"),
+        ],
     },
 ]
 
@@ -231,28 +152,53 @@ BG_MAIN       = "#1e1e2e"
 BG_CARD       = "#2a2a3e"
 BG_CARD_HOVER = "#363650"
 BG_INFO       = "#181825"
+BG_PARAM      = "#1a1a2e"
+BG_ENTRY      = "#313244"
 FG_TITLE      = "#cdd6f4"
 FG_DESC       = "#a6adc8"
 FG_CAT        = "#89b4fa"
+FG_GROUP      = "#fab387"
 ACCENT        = "#f5c2e7"
 GREEN_RUN     = "#a6e3a1"
 BORDER        = "#45475a"
 INFO_BLUE     = "#74c7ec"
+YELLOW        = "#f9e2af"
+
+_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_launcher_config.json")
+
+
+def _write_config(param_entries):
+    """Écrit les valeurs actuelles des champs dans le fichier JSON."""
+    config = {}
+    for key, entry in param_entries.items():
+        val_str = entry.get().strip()
+        try:
+            # Essayer int d'abord, puis float
+            if "." in val_str:
+                config[key] = float(val_str)
+            else:
+                config[key] = int(val_str)
+        except ValueError:
+            config[key] = val_str
+    with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+
+
+def _delete_config():
+    """Supprime le fichier de config (retour aux défauts)."""
+    if os.path.exists(_CONFIG_PATH):
+        os.remove(_CONFIG_PATH)
 
 
 def show_info_popup(root, mod):
     """Ouvre une fenêtre popup avec les détails du module."""
     popup = tk.Toplevel(root)
     popup.title(f"ℹ  {mod['name']}")
-    popup.geometry("550x500")
+    popup.geometry("550x400")
     popup.configure(bg=BG_INFO)
-    popup.resizable(True, True)
-
-    # Centrer par rapport à la fenêtre parente
     popup.transient(root)
     popup.grab_set()
 
-    # Header
     tk.Label(
         popup, text=mod["name"],
         font=("Segoe UI", 14, "bold"), fg=ACCENT, bg=BG_INFO,
@@ -265,93 +211,211 @@ def show_info_popup(root, mod):
         anchor="w", padx=16,
     ).pack(fill="x")
 
-    # Séparateur
     tk.Frame(popup, bg=BORDER, height=1).pack(fill="x", padx=16, pady=8)
 
-    # Contenu scrollable
     text_frame = tk.Frame(popup, bg=BG_INFO)
     text_frame.pack(fill="both", expand=True, padx=16, pady=(0, 8))
 
     text = tk.Text(
         text_frame, wrap="word",
         font=("Consolas", 10), bg=BG_INFO, fg=FG_TITLE,
-        relief="flat", highlightthickness=0,
-        padx=8, pady=8,
+        relief="flat", highlightthickness=0, padx=8, pady=8,
     )
     scroll = ttk.Scrollbar(text_frame, orient="vertical", command=text.yview)
     text.configure(yscrollcommand=scroll.set)
-
     text.pack(side="left", fill="both", expand=True)
     scroll.pack(side="right", fill="y")
-
     text.insert("1.0", mod.get("detail", "Pas de détails disponibles."))
     text.config(state="disabled")
 
-    # Bouton fermer
     tk.Button(
         popup, text="Fermer", font=("Segoe UI", 10, "bold"),
         fg=BG_MAIN, bg=FG_DESC, relief="flat",
-        padx=20, pady=4, cursor="hand2",
-        command=popup.destroy,
+        padx=20, pady=4, cursor="hand2", command=popup.destroy,
     ).pack(pady=(0, 12))
 
 
 def show_launcher():
     """
-    Affiche le menu Tkinter et retourne le nom du fichier sélectionné.
-    Retourne None si la fenêtre est fermée sans sélection.
+    Affiche le menu Tkinter avec panneau de paramètres.
+    Retourne le nom du fichier sélectionné, ou None.
     """
     selected = {"file": None}
+    param_entries = {}  # key -> tk.Entry
 
     root = tk.Tk()
     root.title("AeroPerf Launcher — PI IV")
-    root.geometry("780x720")
+    root.geometry("900x780")
     root.configure(bg=BG_MAIN)
-    root.minsize(650, 500)
+    root.minsize(750, 600)
 
     def on_select(filename):
+        _write_config(param_entries)
         selected["file"] = filename
         root.destroy()
 
-    # ---- HEADER ----
-    header = tk.Frame(root, bg=BG_MAIN, pady=14)
+    # ================================================================
+    # HEADER
+    # ================================================================
+    header = tk.Frame(root, bg=BG_MAIN, pady=10)
     header.pack(fill="x")
 
     tk.Label(
         header, text="✈  AeroPerf Launcher",
-        font=("Segoe UI", 22, "bold"), fg=ACCENT, bg=BG_MAIN,
+        font=("Segoe UI", 20, "bold"), fg=ACCENT, bg=BG_MAIN,
     ).pack(side="left", padx=20)
 
     tk.Label(
-        header, text="Sélectionnez un module à exécuter",
+        header, text="Paramètres + Modules",
         font=("Segoe UI", 11), fg=FG_DESC, bg=BG_MAIN,
     ).pack(side="left", padx=10)
 
-    # ---- SCROLLABLE ----
-    container = tk.Frame(root, bg=BG_MAIN)
-    container.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+    # ================================================================
+    # MAIN PANED (paramètres à gauche, modules à droite)
+    # ================================================================
+    main_pane = tk.PanedWindow(
+        root, orient="horizontal", bg=BG_MAIN,
+        sashwidth=4, sashrelief="flat",
+    )
+    main_pane.pack(fill="both", expand=True, padx=8, pady=(0, 8))
 
-    canvas = tk.Canvas(container, bg=BG_MAIN, highlightthickness=0)
-    scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
-    inner = tk.Frame(canvas, bg=BG_MAIN)
+    # ================================================================
+    # LEFT: PANNEAU PARAMÈTRES
+    # ================================================================
+    left_frame = tk.Frame(main_pane, bg=BG_PARAM, width=320)
+    main_pane.add(left_frame, minsize=280)
 
-    inner.bind("<Configure>",
-               lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    canvas.create_window((0, 0), window=inner, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
+    # Header paramètres
+    param_header = tk.Frame(left_frame, bg=BG_PARAM)
+    param_header.pack(fill="x", padx=10, pady=(10, 4))
 
-    canvas.bind_all("<MouseWheel>",
-                    lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+    tk.Label(
+        param_header, text="⚙  Paramètres de simulation",
+        font=("Segoe UI", 12, "bold"), fg=YELLOW, bg=BG_PARAM,
+    ).pack(side="left")
 
-    # ---- CARTES ----
+    # Bouton reset
+    tk.Button(
+        param_header, text="↺ Reset",
+        font=("Segoe UI", 9), fg=BG_MAIN, bg=FG_DESC,
+        relief="flat", padx=8, cursor="hand2",
+        command=lambda: _reset_params(param_entries),
+    ).pack(side="right")
+
+    tk.Frame(left_frame, bg=BORDER, height=1).pack(fill="x", padx=10, pady=6)
+
+    # Scrollable param area
+    param_canvas = tk.Canvas(left_frame, bg=BG_PARAM, highlightthickness=0)
+    param_scroll = ttk.Scrollbar(left_frame, orient="vertical", command=param_canvas.yview)
+    param_inner = tk.Frame(param_canvas, bg=BG_PARAM)
+
+    param_inner.bind("<Configure>",
+                     lambda e: param_canvas.configure(scrollregion=param_canvas.bbox("all")))
+    param_canvas.create_window((0, 0), window=param_inner, anchor="nw")
+    param_canvas.configure(yscrollcommand=param_scroll.set)
+    param_canvas.pack(side="left", fill="both", expand=True)
+    param_scroll.pack(side="right", fill="y")
+
+    # Charger les valeurs existantes du config (si fichier existe)
+    existing_cfg = {}
+    if os.path.exists(_CONFIG_PATH):
+        try:
+            with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
+                existing_cfg = json.load(f)
+        except Exception:
+            pass
+
+    # Créer les champs par groupe
+    for group in PARAM_GROUPS:
+        # Titre du groupe
+        tk.Label(
+            param_inner, text=group["group"],
+            font=("Segoe UI", 10, "bold"), fg=FG_GROUP, bg=BG_PARAM,
+            anchor="w",
+        ).pack(fill="x", padx=12, pady=(10, 2))
+
+        for key, label, default, unit in group["params"]:
+            row = tk.Frame(param_inner, bg=BG_PARAM)
+            row.pack(fill="x", padx=12, pady=2)
+
+            tk.Label(
+                row, text=label,
+                font=("Segoe UI", 9), fg=FG_DESC, bg=BG_PARAM,
+                anchor="w",
+            ).pack(fill="x")
+
+            entry_row = tk.Frame(row, bg=BG_PARAM)
+            entry_row.pack(fill="x")
+
+            entry = tk.Entry(
+                entry_row,
+                font=("Consolas", 11), bg=BG_ENTRY, fg=FG_TITLE,
+                insertbackground=FG_TITLE, relief="flat",
+                highlightbackground=BORDER, highlightthickness=1,
+            )
+            entry.pack(side="left", fill="x", expand=True, ipady=3)
+
+            # Pré-remplir avec la valeur existante ou le défaut
+            current_val = existing_cfg.get(key, default)
+            entry.insert(0, str(current_val))
+
+            tk.Label(
+                entry_row, text=f" {unit}",
+                font=("Segoe UI", 9), fg="#585b70", bg=BG_PARAM,
+            ).pack(side="left")
+
+            param_entries[key] = entry
+
+    # ================================================================
+    # RIGHT: MODULES
+    # ================================================================
+    right_frame = tk.Frame(main_pane, bg=BG_MAIN)
+    main_pane.add(right_frame, minsize=400)
+
+    tk.Label(
+        right_frame, text="📂  Modules disponibles",
+        font=("Segoe UI", 12, "bold"), fg=FG_CAT, bg=BG_MAIN,
+        anchor="w",
+    ).pack(fill="x", padx=10, pady=(10, 4))
+
+    tk.Frame(right_frame, bg=BORDER, height=1).pack(fill="x", padx=10, pady=4)
+
+    # Scrollable modules
+    mod_canvas = tk.Canvas(right_frame, bg=BG_MAIN, highlightthickness=0)
+    mod_scroll = ttk.Scrollbar(right_frame, orient="vertical", command=mod_canvas.yview)
+    mod_inner = tk.Frame(mod_canvas, bg=BG_MAIN)
+
+    mod_inner.bind("<Configure>",
+                   lambda e: mod_canvas.configure(scrollregion=mod_canvas.bbox("all")))
+    mod_canvas.create_window((0, 0), window=mod_inner, anchor="nw")
+    mod_canvas.configure(yscrollcommand=mod_scroll.set)
+    mod_canvas.pack(side="left", fill="both", expand=True)
+    mod_scroll.pack(side="right", fill="y")
+
+    # Mousewheel sur les deux panneaux
+    def _on_mousewheel(event):
+        # Déterminer quel canvas scroller
+        widget = event.widget
+        # Remonter l'arbre pour trouver le canvas parent
+        w = widget
+        while w:
+            if w == mod_canvas or w == mod_inner:
+                mod_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                return
+            if w == param_canvas or w == param_inner:
+                param_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                return
+            w = w.master
+        mod_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    root.bind_all("<MouseWheel>", _on_mousewheel)
+
+    # Cartes modules
     for mod in MODULES:
-        card = tk.Frame(inner, bg=BG_CARD, padx=16, pady=12,
+        card = tk.Frame(mod_inner, bg=BG_CARD, padx=12, pady=10,
                         highlightbackground=BORDER, highlightthickness=1)
-        card.pack(fill="x", padx=6, pady=4)
+        card.pack(fill="x", padx=6, pady=3)
 
-        # Hover
         def make_hover(c):
             def enter(e):
                 c.config(bg=BG_CARD_HOVER)
@@ -373,38 +437,42 @@ def show_launcher():
         top.pack(fill="x")
 
         tk.Label(top, text=f"[{mod['category']}]",
-                 font=("Segoe UI", 9), fg=FG_CAT, bg=BG_CARD).pack(side="left")
-        tk.Label(top, text=f"  {mod['name']}",
-                 font=("Segoe UI", 12, "bold"), fg=FG_TITLE, bg=BG_CARD).pack(side="left")
+                 font=("Segoe UI", 8), fg=FG_CAT, bg=BG_CARD).pack(side="left")
+        tk.Label(top, text=f" {mod['name']}",
+                 font=("Segoe UI", 11, "bold"), fg=FG_TITLE, bg=BG_CARD).pack(side="left")
 
-        # ---- BOUTON ▶ LANCER ----
         tk.Button(
-            top, text="▶ Lancer", font=("Segoe UI", 10, "bold"),
+            top, text="▶ Lancer", font=("Segoe UI", 9, "bold"),
             fg=BG_MAIN, bg=GREEN_RUN, relief="flat",
-            padx=14, pady=3, cursor="hand2",
+            padx=10, pady=2, cursor="hand2",
             command=lambda f=mod["file"]: on_select(f),
         ).pack(side="right")
 
-        # ---- BOUTON ℹ INFO ----
         tk.Button(
-            top, text=" ℹ ", font=("Segoe UI", 10, "bold"),
+            top, text=" ℹ ", font=("Segoe UI", 9, "bold"),
             fg=BG_MAIN, bg=INFO_BLUE, relief="flat",
-            padx=6, pady=3, cursor="hand2",
+            padx=4, pady=2, cursor="hand2",
             command=lambda m=mod: show_info_popup(root, m),
-        ).pack(side="right", padx=(0, 6))
+        ).pack(side="right", padx=(0, 4))
 
         tk.Label(card, text=mod["desc"],
-                 font=("Segoe UI", 9), fg=FG_DESC, bg=BG_CARD,
-                 justify="left", anchor="w", wraplength=650).pack(fill="x", pady=(6, 0))
+                 font=("Segoe UI", 8), fg=FG_DESC, bg=BG_CARD,
+                 justify="left", anchor="w", wraplength=450).pack(fill="x", pady=(4, 0))
 
-        tk.Label(card, text=f"📄 {mod['file']}",
-                 font=("Consolas", 9), fg="#585b70", bg=BG_CARD,
-                 anchor="w").pack(fill="x", pady=(3, 0))
-
-    # Attendre la sélection ou la fermeture
     root.mainloop()
-
     return selected["file"]
+
+
+def _reset_params(param_entries):
+    """Remet tous les champs à leur valeur par défaut."""
+    defaults = {}
+    for group in PARAM_GROUPS:
+        for key, label, default, unit in group["params"]:
+            defaults[key] = default
+
+    for key, entry in param_entries.items():
+        entry.delete(0, tk.END)
+        entry.insert(0, str(defaults.get(key, "")))
 
 
 # ============================================================
@@ -416,14 +484,13 @@ if __name__ == "__main__":
     os.chdir(script_dir)
 
     while True:
-        # 1. Afficher le menu et récupérer le choix
         chosen_file = show_launcher()
 
         if chosen_file is None:
+            _delete_config()
             print("Aucun module sélectionné. Fin.")
             break
 
-        # 2. Exécuter le script choisi dans le processus courant
         filepath = os.path.join(script_dir, chosen_file)
         print(f"\n{'='*60}")
         print(f"▶  Exécution de : {chosen_file}")
@@ -437,3 +504,6 @@ if __name__ == "__main__":
         print(f"\n{'='*60}")
         print(f"✅ {chosen_file} terminé — réouverture du launcher...")
         print(f"{'='*60}\n")
+
+    # Nettoyage à la sortie
+    _delete_config()

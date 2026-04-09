@@ -69,11 +69,13 @@ mu          = aero.mu_TO
 sref        = geom.S_ref                
 CL_TO      = aero.cl_max_15
 
-VY = 81
+from config_loader import get as cfg
+
+VY = cfg("VY", 81)
 h_cruise = MISSION_HEIGHT_FT
-dT_Isa = 0
-h_airport = 0
-V_cruise_CAS = 108
+dT_Isa = cfg("dT_Isa", 0)
+h_airport = cfg("h_airport", 0)
+V_cruise_CAS = cfg("V_cruise_CAS", 108)
 Weight_Reserve = aero.OEW + aero.PAYLOAD + aero.RESERVE
 TO_weight = weight_0
 
@@ -153,7 +155,7 @@ def FLIGHT_PHASES(h_cruise, h_airport, dT_isa, VY, V_cruise_CAS, TO_weight, Weig
     h_start_climb = 5.0       # Début de montée après accélération
     h_end_climb   = h_cruise  
 
-    CLIMB_POWER_SETTING = 0.90  # Réglage de puissance pour la montée
+    CLIMB_POWER_SETTING = cfg("CLIMB_POWER_SETTING", 0.90)  # Réglage de puissance pour la montée
     t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb, history_climb = montee(
         hpi=h_start_climb, hpf=h_end_climb, dT_isa=dT_isa, CAS_kts=CAS_climb_kts,
         weight_initial=weight, sref=sref, power_setting=CLIMB_POWER_SETTING

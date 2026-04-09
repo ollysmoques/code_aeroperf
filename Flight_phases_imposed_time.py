@@ -12,6 +12,7 @@ from landing_run import *
 from landing_phases import * 
 from Mission_parameters import MISSION_HEIGHT_FT
 from Flight_phases import save_run_parameters
+from config_loader import get as cfg
 import os
 
 
@@ -81,7 +82,7 @@ def FLIGHT_PHASES_TIME_IMPOSED(total_time_imposed_min, h_cruise, h_airport, dT_i
 
     t_climb_min, d_climb_NM, Fuel_tot_climb, weight_top_climb, history_climb = montee(
         hpi=h_start_climb, hpf=h_end_climb, dT_isa=dT_isa, CAS_kts=CAS_climb_kts,
-        weight_initial=weight, sref=sref, power_setting=0.90
+        weight_initial=weight, sref=sref, power_setting=cfg("CLIMB_POWER_SETTING", 0.90)
     )
     weight = weight_top_climb
     
@@ -664,15 +665,15 @@ if __name__ == "__main__":
     
     # Inputs utilisateur (Simulés ici)
     # Exemple: On impose 3 heures de vol (180 min)
-    TIME_IMPOSED_MIN = 25 # <--- MODIFIER ICI
+    TIME_IMPOSED_MIN = cfg("TIME_IMPOSED_MIN", 25)
     
     # Paramètres de base (idem Flight_phases.py)
     fc_default, geom, aero = get_default_inputs()
     
     h_cruise = MISSION_HEIGHT_FT
-    h_airport = 0
-    V_cruise_CAS = 108
-    VY = 81
+    h_airport = cfg("h_airport", 0)
+    V_cruise_CAS = cfg("V_cruise_CAS", 108)
+    VY = cfg("VY", 81)
     TO_weight = aero.MAX_TO # On part à pleine charge
     
     # Quantité de fuel "Max" disponible (Fuel Load + Reserve)
