@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import json 
 
 from Aircraft_data import get_default_inputs, FlightConditions
 from Cdmin import compute_parasite_drag
@@ -7,6 +9,18 @@ from induced_equilibrium import induced_drag
 from helpers import get_wing_cl_cd_from_aoa
 from atmosphere import *
 
+def load_launcher_config():
+    """
+    Charge les paramètres écrits par le launcher.
+    Si le fichier n'existe pas, retourne un dictionnaire vide.
+    """
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_launcher_config.json")
+
+    if not os.path.exists(config_path):
+        return {}
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 # ---------------------- PIE PLOT ---------------------- #
 def plot_single_pie(title, components_dict):
@@ -21,31 +35,138 @@ def plot_single_pie(title, components_dict):
 
     explode = [0.10 if "Wing" in l else 0.03 for l in labels]
 
-    fig, ax = plt.subplots(figsize=(8, 8))
-    wedges, _ = ax.pie(values, startangle=90, explode=explode, labels=None)
+    fig, ax = plt.subplots(figsize=(10, 8))
+    wedges, _ = ax.pie(
+        values,
+        startangle=90,
+        explode=explode,
+        labels=None,
+        wedgeprops=dict(edgecolor="white", linewidth=1.0)
+    )
 
-    # Pourcentages à distance variable (lisible)
+    min_dy = 0.08
+    outside_threshold = 2.0
+    outside_labels = {"left": [], "right": []}
+
     for i, w in enumerate(wedges):
         ang = 0.5 * (w.theta1 + w.theta2)
-        x = np.cos(np.deg2rad(ang))
-        y = np.sin(np.deg2rad(ang))
+        ang_rad = np.deg2rad(ang)
 
-        if pct[i] > 20:
-            r = 0.70
-        elif pct[i] > 5:
-            r = 0.90
+        x = np.cos(ang_rad)
+        y = np.sin(ang_rad)
+
+        color = w.get_facecolor()
+
+        # Grosses parts
+        if pct[i] >= 8:
+            r = 0.72
+            ax.text(
+                r * x,
+                r * y,
+                f"{pct[i]:.1f}%",
+                ha="center",
+                va="center",
+                fontsize=13,
+                fontweight="bold",
+                color="black"
+            )
+
+        # Parts moyennes
+        elif pct[i] >= outside_threshold:
+            r = 0.88
+            ax.text(
+                r * x,
+                r * y,
+                f"{pct[i]:.1f}%",
+                ha="center",
+                va="center",
+                fontsize=12,
+                fontweight="bold",
+                color="black",
+                bbox=dict(
+                    boxstyle="round,pad=0.15",
+                    fc="white",
+                    ec=color,
+                    lw=1.2,
+                    alpha=0.9
+                )
+            )
+
+        # Très petites parts
         else:
-            r = 1.05
+            side = "right" if x >= 0 else "left"
+            outside_labels[side].append({
+                "i": i,
+                "x": x,
+                "y": y,
+                "pct": pct[i],
+                "color": color
+            })
 
-        ax.text(
-            r * x,
-            r * y,
-            f"{pct[i]:.1f}%",
-            ha="center",
-            va="center",
-            fontsize=13,
-            fontweight="bold",
-        )
+    def spread_y_positions(items, min_dy):
+        if not items:
+            return []
+
+        items = sorted(items, key=lambda item: item["y"])
+        y_positions = [item["y"] * 1.08 for item in items]
+
+        for j in range(1, len(y_positions)):
+            if y_positions[j] - y_positions[j - 1] < min_dy:
+                y_positions[j] = y_positions[j - 1] + min_dy
+
+        y_min, y_max = -1.05, 1.05
+
+        if y_positions[-1] > y_max:
+            shift = y_positions[-1] - y_max
+            y_positions = [y - shift for y in y_positions]
+
+        if y_positions[0] < y_min:
+            shift = y_min - y_positions[0]
+            y_positions = [y + shift for y in y_positions]
+
+        return y_positions
+
+    # Annotations extérieures
+    for side, items in outside_labels.items():
+        items = sorted(items, key=lambda item: item["y"])
+        y_positions = spread_y_positions(items, min_dy)
+
+        for k, (item, y_text) in enumerate(zip(items, y_positions)):
+            x = item["x"]
+            y = item["y"]
+            color = item["color"]
+
+            x_text = 1.08 if side == "right" else -1.08
+            ha = "left" if side == "right" else "right"
+
+            # petite variation de courbure pour distinguer les lignes
+            rad = 0.15 + 0.05 * (k % 3)
+
+            ax.annotate(
+                f"{item['pct']:.1f}%",
+                xy=(1.01 * x, 1.01 * y),
+                xytext=(x_text, y_text),
+                ha=ha,
+                va="center",
+                fontsize=11,
+                fontweight="bold",
+                color="black",
+                bbox=dict(
+                    boxstyle="round,pad=0.15",
+                    fc="white",
+                    ec=color,
+                    lw=1.2,
+                    alpha=0.95
+                ),
+                arrowprops=dict(
+                    arrowstyle="-",
+                    lw=1.8,
+                    color=color,
+                    shrinkA=0,
+                    shrinkB=0,
+                    connectionstyle=f"arc3,rad={rad if side == 'right' else -rad}"
+                )
+            )
 
     ax.set_title(title, fontsize=15)
 
@@ -53,7 +174,7 @@ def plot_single_pie(title, components_dict):
         wedges,
         labels,
         loc="center left",
-        bbox_to_anchor=(1.05, 0.5),
+        bbox_to_anchor=(1.02, 0.5),
         fontsize=11,
         title="Components",
         title_fontsize=12,
@@ -147,6 +268,11 @@ def run_case_equilibrium(h_ft, dT_isa, V_kts, weight_lbf, cg_mac_current, thrust
         "q_psf": float(q_psf),
         "alpha_eq_deg": float(alpha_eq),
         "flaps_deg": float(flap_defl_deg),
+
+        # Valeurs provenant de la polaire de l'aile
+        "CL_wing": float(cl_w),
+        "CD_wing": float(cd_w),
+
         "D_total_lbf": float(d_total),
         "CD_total": float(cd_total),
         "components": components,
@@ -159,46 +285,71 @@ def print_summary(name, res):
     print(f"Alt [ft]      : {res['h_ft']:.0f}")
     print(f"V [kts]       : {res['V_kts']:.1f}")
     print(f"alpha_eq [deg]: {res['alpha_eq_deg']:.2f}")
+
+    if "CL_wing" in res:
+        print(f"CL_wing       : {res['CL_wing']:.6f}")
+
+    if "CD_wing" in res:
+        print(f"CD_wing       : {res['CD_wing']:.6f}")
+
     print(f"D_total [lbf] : {res['D_total_lbf']:.3f}")
     print(f"CD_total      : {res['CD_total']:.6f}")
+
     print("\nComponent breakdown (D and CD):")
     print(f"{'Component':<24} {'D [lbf]':>12} {'CD':>12}")
     print("-" * 52)
+
     for comp, vals in sorted(res["components"].items(), key=lambda kv: -kv[1]["D_lbf"]):
         print(f"{comp:<24} {vals['D_lbf']:12.4f} {vals['CD']:12.6f}")
-
-
 # ---------------------- MAIN ---------------------- #
 if __name__ == "__main__":
-    W = 358
+    cfg = load_launcher_config()
+
+    OEW = cfg.get("OEW", 218)
+    fuel = cfg.get("FUEL_LOAD", 75.0)
+    payload = cfg.get("PAYLOAD", 170)
+
+    W = OEW + fuel + payload
+
     cg = 0.33
     thrust = 89
-    dT_isa = 0.0
+
+    dT_isa = cfg.get("dT_Isa", 0.0)
+
+    h_airport = cfg.get("h_airport", 0)
+    h_cruise = cfg.get("MISSION_HEIGHT_FT", 10000)
+
+    V_cruise = cfg.get("V_cruise_CAS", 108)
+
+    print("\n===== PARAMÈTRES LAUNCHER UTILISÉS =====")
+    print(f"Poids total [lbf]       : {W:.1f}")
+    print(f"Altitude aéroport [ft]  : {h_airport:.0f}")
+    print(f"Altitude croisière [ft] : {h_cruise:.0f}")
+    print(f"Delta ISA [°C]          : {dT_isa:.1f}")
+    print(f"V croisière [kts CAS]   : {V_cruise:.1f}")
 
     res_to = run_case_equilibrium(
-        h_ft=0, dT_isa=dT_isa, V_kts=51.4,
+        h_ft=h_airport, dT_isa=dT_isa, V_kts=51.4,
         weight_lbf=W, cg_mac_current=cg, thrust=thrust,
         flap_defl_deg=15
     )
 
     res_cr = run_case_equilibrium(
-        h_ft=10000, dT_isa=dT_isa, V_kts=108,
+        h_ft=h_cruise, dT_isa=dT_isa, V_kts=V_cruise,
         weight_lbf=W, cg_mac_current=cg, thrust=thrust,
         flap_defl_deg=0
     )
 
     res_ld = run_case_equilibrium(
-        h_ft=0, dT_isa=dT_isa, V_kts=75,
+        h_ft=h_airport, dT_isa=dT_isa, V_kts=75,
         weight_lbf=W, cg_mac_current=cg, thrust=thrust,
         flap_defl_deg=30
     )
 
-    # Print requested info
     print_summary("TAKE-OFF ", res_to)
     print_summary("CRUISE ", res_cr)
     print_summary("LANDING ", res_ld)
 
-    # 3 figures séparées (pie charts)
     plot_single_pie("Take-off drag breakdown", res_to["components"])
     plot_single_pie("Cruise drag breakdown", res_cr["components"])
     plot_single_pie("Landing drag breakdown", res_ld["components"])
